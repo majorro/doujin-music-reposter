@@ -11,7 +11,7 @@ public static class ConfigurationExtensions
     {
         builder.Services.AddHttpClient();
         builder.Services.AddSingleton<VkApiClient>();
-        builder.Services.AddSingleton<JsonParsingService>();
+        builder.Services.AddSingleton<JsonSerializingService>();
         builder.Services.AddSingleton<VkApiService>();
 
         return builder;
