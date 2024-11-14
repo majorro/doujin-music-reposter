@@ -1,4 +1,4 @@
-using DoujinMusicReposter.Api;
+using DoujinMusicReposter.Vk;
 using DoujinMusicReposter.Telegram;
 
 var builder = Host.CreateApplicationBuilder(args);

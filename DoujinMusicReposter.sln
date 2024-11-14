@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DoujinMusicReposter.Telegram", "src\DoujinMusicReposter.Telegram\DoujinMusicReposter.Telegram.csproj", "{27C595B2-623A-4926-9FE4-AE547AB7B90C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DoujinMusicReposter.Api", "src\DoujinMusicReposter.Api\DoujinMusicReposter.Api.csproj", "{C0103437-FD70-41BE-ACBF-D51021DDA78A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DoujinMusicReposter.Vk", "src\DoujinMusicReposter.Vk\DoujinMusicReposter.Vk.csproj", "{C0103437-FD70-41BE-ACBF-D51021DDA78A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

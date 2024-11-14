@@ -1,4 +1,4 @@
-﻿namespace DoujinMusicReposter.Api.Json.Dtos;
+﻿namespace DoujinMusicReposter.Vk.Json.Dtos;
 
 public record AudioArchiveDto
 {

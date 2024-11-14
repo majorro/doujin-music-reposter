@@ -21,6 +21,6 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DoujinMusicReposter.Api\DoujinMusicReposter.Api.csproj" />
+      <ProjectReference Include="..\DoujinMusicReposter.Vk\DoujinMusicReposter.Vk.csproj" />
     </ItemGroup>
 </Project>
