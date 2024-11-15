@@ -54,9 +54,18 @@ public class VkApiClient(HttpClient httpClient) : IVkApiClient
             new("group_id", GroupId.ToString()),
         };
 
+        var request = new HttpRequestMessage()
+        {
+            Method = HttpMethod.Get,
+            RequestUri = new Uri(GetQuery(method, queryParams)),
+            Headers =
+            {
+                { "Authorization", $"Bearer " } // TODO: add community key from options
+            }
+        };
+        var response = await httpClient.SendAsync(request);
 
-
-        return await httpClient.GetStreamAsync(GetQuery(method, queryParams));
+        return await response.Content.ReadAsStreamAsync();
     }
 
     public async Task<Stream> GetNewEvents(LongPollingServerConfigDto config)
@@ -70,18 +79,7 @@ public class VkApiClient(HttpClient httpClient) : IVkApiClient
             new("wait", "25"),
         };
 
-        var request = new HttpRequestMessage()
-        {
-            Method = HttpMethod.Get,
-            RequestUri = new Uri(GetQuery(method, queryParams, new Uri(config.Server))),
-            Headers =
-            {
-                { "Authorization", $"Bearer " } // TODO: add community key from options
-            }
-        };
-        var response = await httpClient.SendAsync(request);
-
-        return await response.Content.ReadAsStreamAsync();
+        return await httpClient.GetStreamAsync(GetQuery(method, queryParams, new Uri(config.Server)));
     }
 
     private static string GetQuery(string method, KeyValuePair<string, string>[]? additionalParams = null, Uri? apiHost = null) =>
