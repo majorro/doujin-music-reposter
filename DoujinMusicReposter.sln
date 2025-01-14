@@ -1,8 +1,21 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DoujinMusicReposter.Telegram", "src\DoujinMusicReposter.Telegram\DoujinMusicReposter.Telegram.csproj", "{27C595B2-623A-4926-9FE4-AE547AB7B90C}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DoujinMusicReposter.App", "src\DoujinMusicReposter.App\DoujinMusicReposter.App.csproj", "{27C595B2-623A-4926-9FE4-AE547AB7B90C}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DoujinMusicReposter.Vk", "src\DoujinMusicReposter.Vk\DoujinMusicReposter.Vk.csproj", "{C0103437-FD70-41BE-ACBF-D51021DDA78A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DoujinMusicReposter.Persistence", "src\DoujinMusicReposter.Persistence\DoujinMusicReposter.Persistence.csproj", "{F3FA8439-0EFE-4CC0-8DF8-3A72394C9F6B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DoujinMusicReposter.Telegram", "src\DoujinMusicReposter.Telegram\DoujinMusicReposter.Telegram.csproj", "{CBDB8156-3513-476B-9404-6F6D5D448C04}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{565E2CFA-4E25-4FA0-A328-B4C8298A2C49}"
+	ProjectSection(SolutionItems) = preProject
+		.env = .env
+		NuGet.Config = NuGet.Config
+		.gitignore = .gitignore
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DoujinMusicReposter.Telegram.Tests", "src\DoujinMusicReposter.Telegram.Tests\DoujinMusicReposter.Telegram.Tests.csproj", "{1B0BDAE4-0B2D-4A36-ACE3-9C4CD7EDDA85}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -18,5 +31,17 @@ Global
 		{C0103437-FD70-41BE-ACBF-D51021DDA78A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C0103437-FD70-41BE-ACBF-D51021DDA78A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C0103437-FD70-41BE-ACBF-D51021DDA78A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{F3FA8439-0EFE-4CC0-8DF8-3A72394C9F6B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F3FA8439-0EFE-4CC0-8DF8-3A72394C9F6B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F3FA8439-0EFE-4CC0-8DF8-3A72394C9F6B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F3FA8439-0EFE-4CC0-8DF8-3A72394C9F6B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CBDB8156-3513-476B-9404-6F6D5D448C04}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CBDB8156-3513-476B-9404-6F6D5D448C04}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CBDB8156-3513-476B-9404-6F6D5D448C04}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CBDB8156-3513-476B-9404-6F6D5D448C04}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1B0BDAE4-0B2D-4A36-ACE3-9C4CD7EDDA85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1B0BDAE4-0B2D-4A36-ACE3-9C4CD7EDDA85}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1B0BDAE4-0B2D-4A36-ACE3-9C4CD7EDDA85}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1B0BDAE4-0B2D-4A36-ACE3-9C4CD7EDDA85}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

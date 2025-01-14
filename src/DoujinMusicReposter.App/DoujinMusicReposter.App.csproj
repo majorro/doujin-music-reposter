@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <UserSecretsId>dotnet-DoujinMusicReposter.Telegram-c6d018de-901e-4286-9e62-179674e4b4f9</UserSecretsId>
+        <NoDefaultLaunchSettingsFile>True</NoDefaultLaunchSettingsFile>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
+        <LangVersion>13</LangVersion>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Majorro.Common" Version="1.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.0" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="..\..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\DoujinMusicReposter.Persistence\DoujinMusicReposter.Persistence.csproj" />
+      <ProjectReference Include="..\DoujinMusicReposter.Telegram\DoujinMusicReposter.Telegram.csproj" />
+      <ProjectReference Include="..\DoujinMusicReposter.Vk\DoujinMusicReposter.Vk.csproj" />
+    </ItemGroup>
+</Project>

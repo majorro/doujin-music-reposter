@@ -1,20 +1,26 @@
 ﻿using System.Text.Json;
-using DoujinMusicReposter.Vk.Json.Dtos;
+using DoujinMusicReposter.Vk.Dtos;
+using DoujinMusicReposter.Vk.Http.Dtos;
 using Microsoft.Extensions.Logging;
 
 namespace DoujinMusicReposter.Vk.Json;
 
-// TODO: add tests, handle errors
+// TODO: throw instead of log.error
 public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJsonSerializingService
 {
-    public (int TotalCount, List<PostDto> Posts) ParseGetPostsResponse(Stream stream)
+    public VkResponse<GetPostsResponse> ParseGetPostsResponse(Stream stream)
     {
         using var doc = JsonDocument.Parse(stream);
-        var response = doc.RootElement.GetProperty("response");
+        var root = doc.RootElement;
+
+        var error = TryGetError<GetPostsResponse>(root);
+        if (error is not null) return error;
+
+        var response = root.GetProperty("response");
         var items = response.GetProperty("items");
 
         var totalCount = response.GetProperty("count").GetInt32();
-        var posts = new List<PostDto>();
+        var posts = new List<Post>();
         foreach (var post in items.EnumerateArray())
         {
             var postDto = DeserializePost(post);
@@ -22,66 +28,100 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
             else logger.LogWarning("Failed to deserialize post: {Post}", post.GetRawText());
         }
 
-        return (totalCount, posts);
+        return new VkResponse<GetPostsResponse>(new GetPostsResponse(totalCount, posts));
     }
 
-    public List<CommentDto> ParseGetCommentsResponse(Stream stream)
+    public VkResponse<GetCommentsResponse> ParseGetCommentsResponse(Stream stream)
     {
         using var doc = JsonDocument.Parse(stream);
-        var response = doc.RootElement.GetProperty("response");
+        var root = doc.RootElement;
+
+        var error = TryGetError<GetCommentsResponse>(root);
+        if (error is not null) return error;
+
+        var response = root.GetProperty("response");
         var items = response.GetProperty("items");
 
-        var comments = new List<CommentDto>();
+        var comments = new List<Comment>();
         foreach (var comment in items.EnumerateArray())
             comments.Add(DeserializeComment(comment));
 
-        return comments;
+        return new VkResponse<GetCommentsResponse>(new GetCommentsResponse(comments));
     }
 
-    public LongPollingServerConfigDto ParseGetLongPollServerResponse(Stream stream)
+    public VkResponse<GetLongPollServerResponse> ParseGetLongPollServerResponse(Stream stream)
     {
         using var doc = JsonDocument.Parse(stream);
-        var response = doc.RootElement.GetProperty("response");
+        var root = doc.RootElement;
+
+        var error = TryGetError<GetLongPollServerResponse>(root);
+        if (error is not null) return error;
+
+        var response = root.GetProperty("response");
 
         var props = GetProperties(response, "key", "server", "ts").Select(p => p.GetString()!).ToList();
-        return new LongPollingServerConfigDto
+        var config = new LongPollingServerConfig
         {
             Key = props[0],
             Server = props[1],
-            LastEventNumber = props[2],
+            Timestamp = props[2],
         };
+
+        return new VkResponse<GetLongPollServerResponse>(new GetLongPollServerResponse(config));
     }
 
-    public (string LastEventNumber, List<PostDto> Posts)? ParseGetNewEventsResponse(Stream stream)
+    public VkResponse<GetNewEventsResponse> ParseGetNewEventsResponse(Stream stream)
     {
         using var doc = JsonDocument.Parse(stream);
-        if (doc.RootElement.TryGetProperty("failed", out var failed))
+        var root = doc.RootElement;
+
+        if (root.TryGetProperty("failed", out var failed))
         {
             var code = failed.GetInt32();
-            if (code == 1)
-                return (doc.RootElement.GetProperty("ts").GetString()!, []);
-
-            return null; // outdated server config
+            switch (code)
+            {
+                case 1:
+                    var response = new GetNewEventsResponse(root.GetProperty("ts").GetString()!, []);
+                    return new VkResponse<GetNewEventsResponse>(response);
+                case 2:
+                    return new VkResponse<GetNewEventsResponse>(code, "The key has expired, you need to re-receive key.");
+                case 3:
+                    return new VkResponse<GetNewEventsResponse>(code, "Information is lost, you need to request new key and ts.");
+                default:
+                    return new VkResponse<GetNewEventsResponse>(code, "Unknown error");
+            }
         }
 
-        var updates = doc.RootElement.GetProperty("updates");
+        var updates = root.GetProperty("updates");
 
-        var lastEventNumber = doc.RootElement.GetProperty("ts").GetString()!;
-        var posts = new List<PostDto>();
+        var timestamp = root.GetProperty("ts").GetString()!;
+        var posts = new List<Post>();
         foreach (var update in updates.EnumerateArray())
         {
+            var type = update.GetProperty("type").GetString();
+            if (type != "wall_post_new")
+                continue;
+
             var post = update.GetProperty("object");
             var postDto = DeserializePost(post);
             if (postDto is not null) posts.Add(postDto);
             else logger.LogWarning("Failed to deserialize post: {Post}", post.GetRawText());
         }
 
-        return (lastEventNumber, posts);
+        return new VkResponse<GetNewEventsResponse>(new GetNewEventsResponse(timestamp, posts));
     }
 
-    private static CommentDto DeserializeComment(JsonElement comment)
+    private static VkResponse<T>? TryGetError<T>(JsonElement root) where T : IResponseDto
     {
-        var result = new CommentDto();
+        if (!root.TryGetProperty("error", out var error)) return null;
+        var code = error.GetProperty("error_code").GetInt32();
+        var message = error.GetProperty("error_msg").GetString()!;
+        return new VkResponse<T>(code, message);
+    }
+
+    private static Comment DeserializeComment(JsonElement comment)
+    {
+        var result = new Comment();
         foreach (var prop in comment.EnumerateObject())
         {
             if (prop.NameEquals("id"))
@@ -95,8 +135,6 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
                     if (TryDeserializeAudioArchive(attachment, out var audioArchive))
                         result.AudioArchives.Add(audioArchive!);
                 }
-
-                break;
             }
             else if (prop.NameEquals("is_from_post_author"))
                 result.IsFromAuthor = true;
@@ -105,12 +143,13 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
         return result;
     }
 
-    private static PostDto? DeserializePost(JsonElement post)
+    private static Post? DeserializePost(JsonElement post)
     {
-        var result = new PostDto();
+        var result = new Post();
         foreach (var prop in post.EnumerateObject())
         {
-            if (prop.NameEquals("post") && prop.Value.GetString() != "post")
+            if ((prop.NameEquals("type") && prop.Value.GetString() != "post") ||
+                (prop.NameEquals("inner_type") && prop.Value.GetString() != "wall_wallpost"))
                 return null;
 
             if (prop.NameEquals("attachments"))
@@ -121,6 +160,8 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
                         result.Photo = new Uri(photo.GetProperty("orig_photo").GetProperty("url").GetString()!);
                     else if (TryDeserializeAudioArchive(attachment, out var audioArchive))
                         result.AudioArchives.Add(audioArchive!);
+                    else if (TryDeserializeAudio(attachment, out var audio))
+                        result.Audios.Add(audio!);
                 }
             }
             else if (prop.NameEquals("id"))
@@ -132,28 +173,55 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
             }
         }
 
-        // TODO: verify data integrity?
-
         return result;
     }
 
-    private static bool TryDeserializeAudioArchive(JsonElement attachment, out AudioArchiveDto? audioArchive)
+    private static bool TryDeserializeAudioArchive(JsonElement attachment, out AudioArchive? audioArchive)
     {
         audioArchive = null;
         if (!attachment.TryGetProperty("doc", out var doc))
             return false;
 
-        var props = GetProperties(doc, "size", "type", "url");
+        var props = GetProperties(doc, "title", "size", "ext", "type", "url");
 
-        var type = props[1].GetInt32();
+        var type = props[3].GetInt32();
         if (!IsAudioArchive(type))
             return false;
 
-        audioArchive = new AudioArchiveDto()
+        var ext = props[2].GetString()!;
+        var fileName = props[0].GetString()!;
+        if (!fileName.EndsWith(ext))
+            fileName = $"{fileName}.{ext}";
+        audioArchive = new AudioArchive()
         {
-            SizeBytes = props[0].GetInt64(),
-            Link = new Uri(props[2].GetString()!),
+            SizeBytes = props[1].GetInt64(),
+            FileName = fileName,
+            Link = new Uri(props[4].GetString()!),
         };
+
+        audioArchive.FileName = !audioArchive.FileName.EndsWith('1') ? audioArchive.FileName : audioArchive.FileName[..^1];
+
+        return true;
+    }
+
+    private static bool TryDeserializeAudio(JsonElement attachment, out Audio? audio)
+    {
+        audio = null;
+        if (!attachment.TryGetProperty("audio", out var audioElement))
+            return false;
+
+        var props = GetProperties(audioElement, "artist", "title", "duration", "url");
+        if (string.IsNullOrWhiteSpace(props[3].GetString())) // restricted
+            return false;
+
+        audio = new Audio()
+        {
+            Artist = props[0].GetString()!,
+            Title = props[1].GetString()!,
+            DurationSeconds = props[2].GetInt32(),
+            Link = new Uri(props[3].GetString()!),
+        };
+
         return true;
     }
 

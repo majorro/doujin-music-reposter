@@ -1,11 +1,11 @@
-﻿using DoujinMusicReposter.Vk.Json.Dtos;
+﻿using DoujinMusicReposter.Vk.Http.Dtos;
 
 namespace DoujinMusicReposter.Vk.Json;
 
 public interface IJsonSerializingService
 {
-    (int TotalCount, List<PostDto> Posts) ParseGetPostsResponse(Stream stream);
-    List<CommentDto> ParseGetCommentsResponse(Stream stream);
-    LongPollingServerConfigDto ParseGetLongPollServerResponse(Stream stream);
-    (string LastEventNumber, List<PostDto> Posts)? ParseGetNewEventsResponse(Stream stream);
+    VkResponse<GetPostsResponse> ParseGetPostsResponse(Stream stream);
+    VkResponse<GetCommentsResponse> ParseGetCommentsResponse(Stream stream);
+    VkResponse<GetLongPollServerResponse> ParseGetLongPollServerResponse(Stream stream);
+    VkResponse<GetNewEventsResponse> ParseGetNewEventsResponse(Stream stream);
 }
