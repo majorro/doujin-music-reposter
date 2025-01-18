@@ -1,6 +1,7 @@
 ﻿using System.Buffers;
 using System.Diagnostics;
 using System.Net;
+using DoujinMusicReposter.Telegram.Services.TgPostBuilding.AudioTags;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding.Models;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding.TextEncoding;
 using DoujinMusicReposter.Telegram.Setup.Configuration;
@@ -20,7 +21,8 @@ public class TgPostBuildingService(
     IOptions<TgConfig> appConfig,
     IOptions<VkConfig> vkConfig,
     HttpClient httpClient,
-    EncodingRepairingService encodingRepairer) // what to post
+    EncodingRepairingService encodingRepairer,
+    AudioTaggingService audioTagger) // what to post
 {
     private const int MAX_ATTACHMENT_SIZE = int.MaxValue - 100000000; // idk
     private const int MAX_PHOTO_CAPTION_LENGTH = 1024;
@@ -144,8 +146,8 @@ public class TgPostBuildingService(
             await using var es = reader.OpenEntryStream();
             await es.CopyToAsync(entryStream);
 
-            var entryFileName = Path.GetFileName(entry.Key!);
-            var (title, artist, durationSeconds) = GetTags(entryStream, entryFileName);
+            var entryFileName = encodingRepairer.TryFix(Path.GetFileName(entry.Key!))!;
+            var (title, artist, durationSeconds) = audioTagger.ReadAndFix(entryStream, entryFileName);
             var audioFileParts = await SaveAudioFromStreamAsync(
                 entryStream,
                 title,
@@ -162,36 +164,6 @@ public class TgPostBuildingService(
         }
 
         return result;
-    }
-    private class ArchiveFileAbstraction(Stream stream, string name) : TagLib.File.IFileAbstraction
-    {
-        public Stream ReadStream { get; } = stream;
-        public Stream WriteStream { get; } = stream;
-        public string Name { get; } = name;
-
-        public void CloseStream(Stream stream)
-        {
-            ReadStream.Position = 0;
-        }
-    }
-
-    private (string? Title, string? Artist, int DurationSeconds) GetTags(Stream stream, string fileName)
-    {
-        try
-        {
-            using var tagFile = TagLib.File.Create(new ArchiveFileAbstraction(stream, fileName));
-            var title = tagFile.Tag.Title;
-            var artist = string.IsNullOrWhiteSpace(tagFile.Tag.JoinedPerformers)
-                ? tagFile.Tag.JoinedAlbumArtists
-                : tagFile.Tag.JoinedPerformers;
-            var durationSeconds = (int)tagFile.Properties.Duration.TotalSeconds;
-            return (title, artist, durationSeconds);
-        }
-        catch (Exception e)
-        {
-            logger.LogWarning(e, "Unable to read tags from {FileName}", fileName);
-            return (null, null, 0);
-        }
     }
 
     private static bool IsAudioFile(IEntry entry)
@@ -242,10 +214,15 @@ public class TgPostBuildingService(
         if (stream == null)
             return [];
 
+        await using var memoryStream = _memoryStreamPool.GetStream();
+        await stream.CopyToAsync(memoryStream);
+
+        audioTagger.WriteAndFix(memoryStream, new AudioInfo(audio.Title, audio.Artist, audio.DurationSeconds), $"{audio.Title}.mp3");
+
         return await SaveAudioFromStreamAsync(
-            stream,
-            audio.Title,
-            audio.Artist,
+            memoryStream,
+            encodingRepairer.TryFix(audio.Title),
+            encodingRepairer.TryFix(audio.Artist),
             audio.DurationSeconds,
             trackNumber,
             0, // let's hope there won't be any 2gb mp3s xd
@@ -264,10 +241,6 @@ public class TgPostBuildingService(
         string fileName,
         string dirName)
     {
-        title = encodingRepairer.TryFix(title);
-        artist = encodingRepairer.TryFix(artist);
-        fileName = encodingRepairer.TryFix(fileName)!;
-
         // TODO: convert with NAudio in case of any issues
         if (!string.IsNullOrWhiteSpace(title) && !string.IsNullOrWhiteSpace(artist))
             fileName = $"{trackNumber + 1:D2}. {artist} - {title}.mp3";

@@ -23,6 +23,7 @@ public static class HostApplicationBuilderExtensions
         builder.AddBotClients();
 
         builder.Services.AddSingleton<EncodingRepairingService>();
+        builder.Services.AddSingleton<AudioTaggingService>();
 
         builder.Services
             .AddHttpClient<TgPostBuildingService>(x => x.Timeout = TimeSpan.FromMinutes(5))
