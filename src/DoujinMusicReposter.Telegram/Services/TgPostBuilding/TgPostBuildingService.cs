@@ -267,7 +267,7 @@ public class TgPostBuildingService(
             response.Content.Headers.ContentLength < POSSIBLY_BROKEN_ARCHIVE_SIZE_THRESHOLD)
             return null;
         response.EnsureSuccessStatusCode();
-        return new ResilientStream(logger, await response.Content.ReadAsStreamAsync());
+        return new ResilientStream(await response.Content.ReadAsStreamAsync(), logger);
     }
 
     private async Task<T[]> SaveFromStreamAsync<T>(Stream stream, string fileName, long sizeBytes, string? dirName = null)

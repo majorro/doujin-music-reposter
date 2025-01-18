@@ -4,7 +4,7 @@ using Polly.Retry;
 
 namespace DoujinMusicReposter.Telegram.Services.TgPostBuilding;
 
-public class ResilientStream(ILogger logger, Stream stream) : Stream
+public class ResilientStream(Stream stream, ILogger logger) : Stream
 {
     private readonly ResiliencePipeline _retryPipeline = new ResiliencePipelineBuilder()
         .AddRetry(new RetryStrategyOptions
