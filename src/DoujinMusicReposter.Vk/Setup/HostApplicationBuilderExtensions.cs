@@ -5,6 +5,7 @@ using DoujinMusicReposter.Vk.Setup.Configuration;
 using Majorro.Common.Setup.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Polly;
 using Polly.Extensions.Http;
@@ -17,6 +18,8 @@ public static class HostApplicationBuilderExtensions
     {
         builder.Configure<VkConfig>();
 
+        var sp = builder.Services.BuildServiceProvider();
+        var logger = sp.GetRequiredService<ILogger<VkApiClient>>();
         builder.Services.AddHttpClient<IVkApiClient, VkApiClient>((sp, client) =>
             {
                 var vkConfig = sp.GetRequiredService<IOptions<VkConfig>>().Value;
@@ -24,7 +27,9 @@ public static class HostApplicationBuilderExtensions
             })
             .AddPolicyHandler(_ => HttpPolicyExtensions
                 .HandleTransientHttpError()
-                .WaitAndRetryForeverAsync(retryAttempt => TimeSpan.FromSeconds(Math.Min(60, Math.Pow(2, retryAttempt)))));
+                .WaitAndRetryForeverAsync(
+                    retryAttempt => TimeSpan.FromSeconds(Math.Min(60, Math.Pow(2, retryAttempt))),
+                    (result, i, _) => logger.LogWarning("Request {Request} failed with response: {Code}: {Error}, retry #{I}", result.Result.RequestMessage, (int)result.Result.StatusCode, result.Result.ReasonPhrase, i)));
         builder.Services.AddSingleton<IJsonSerializingService, JsonSerializingService>();
 
         builder.Services.AddHostedService<UpdateTrackingWorker>();

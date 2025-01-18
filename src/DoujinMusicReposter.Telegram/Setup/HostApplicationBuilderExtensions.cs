@@ -1,6 +1,7 @@
 ﻿using System.Net;
 using DoujinMusicReposter.Telegram.Services;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding;
+using DoujinMusicReposter.Telegram.Services.TgPostBuilding.AudioTags;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding.TextEncoding;
 using DoujinMusicReposter.Telegram.Setup.Configuration;
 using Majorro.Common.Setup.Extensions;
@@ -20,26 +21,31 @@ public static class HostApplicationBuilderExtensions
     {
         builder.Configure<TgConfig>();
 
-        builder.AddBotClients();
+        var sp = builder.Services.BuildServiceProvider();
+        builder.AddBotClients(sp);
 
         builder.Services.AddSingleton<EncodingRepairingService>();
         builder.Services.AddSingleton<AudioTaggingService>();
 
+        // TODO: deal with 504 Gateway Timeout
+        var logger = sp.GetRequiredService<ILogger<TgPostBuildingService>>();
         builder.Services
             .AddHttpClient<TgPostBuildingService>(x => x.Timeout = TimeSpan.FromMinutes(5))
             .AddPolicyHandler(_ => HttpPolicyExtensions
                 .HandleTransientHttpError()
-                .WaitAndRetryForeverAsync(retryAttempt => TimeSpan.FromSeconds(Math.Min(60, Math.Pow(2, retryAttempt)))));
+                .WaitAndRetryForeverAsync(
+                    retryAttempt => TimeSpan.FromSeconds(Math.Min(60, Math.Pow(2, retryAttempt))),
+                    (result, i, _) => logger.LogWarning("Request {Request} failed with response: {Code}: {Error}, retry #{I}", result.Result.RequestMessage, (int)result.Result.StatusCode, result.Result.ReasonPhrase, i)));
 
         builder.Services.AddSingleton<PostsManagingService>();
 
         return builder;
     }
 
-    private static IHostApplicationBuilder AddBotClients(this IHostApplicationBuilder builder)
+    private static IHostApplicationBuilder AddBotClients(this IHostApplicationBuilder builder, ServiceProvider sp)
     {
-        var sp = builder.Services.BuildServiceProvider();
         var botConfig = sp.GetRequiredService<IOptions<TgConfig>>().Value.BotConfig;
+        var logger = sp.GetRequiredService<ILogger<TelegramBotClient>>();
 
         for (var _ = 0; _ < botConfig.Tokens.Length; ++_)
         {
@@ -58,7 +64,9 @@ public static class HostApplicationBuilderExtensions
                     .OrResult(resp =>
                         resp.StatusCode == HttpStatusCode.BadRequest &&
                         resp.Content.ReadAsStringAsync().Result.Contains("Too many requests"))
-                    .WaitAndRetryForeverAsync(retryAttempt => TimeSpan.FromSeconds(8 * retryAttempt))); // forever?
+                    .WaitAndRetryForeverAsync( // forever?
+                        retryAttempt => TimeSpan.FromSeconds(8 * retryAttempt),
+                        (result, i, _) => logger.LogWarning("Request {Request} failed with response: {Code}: {Error}, retry #{I}", result.Result.RequestMessage, (int)result.Result.StatusCode, result.Result.ReasonPhrase, i)));
         }
 
         builder.Services.AddSingleton<TelegramBotClientPoolService>();
