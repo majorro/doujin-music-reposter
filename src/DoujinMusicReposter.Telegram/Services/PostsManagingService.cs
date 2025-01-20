@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding.Models;
 using DoujinMusicReposter.Telegram.Setup.Configuration;
+using DoujinMusicReposter.Telegram.Utils;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Telegram.Bot;
@@ -122,7 +123,9 @@ public class PostsManagingService(
 
         try
         {
-            await botClient.DeleteMessages(_chatId, messagesIds);
+            var chunks = messagesIds.Chunk(100);
+            foreach (var chunk in chunks)
+                await botClient.DeleteMessages(_chatId, chunk);
         }
         catch (ApiRequestException e) when (e.ErrorCode == 400)
         {
@@ -130,7 +133,10 @@ public class PostsManagingService(
             var sb = new StringBuilder("Delete these:\n");
             foreach (var id in messagesIds)
                 sb.Append($"https://t.me/{_chatId.TrimStart('@')}/{id}\n");
-            await botClient.SendMessage(_chatAdminId, sb.ToString());
+            var textParts = TextHelper.GetTgTextParts(sb.ToString()); // smart move lmao
+            foreach (var textPart in textParts)
+                await botClient.SendMessage(_chatAdminId, textPart);
+
 
             // TODO: ensure that the message was deleted
         }

@@ -5,6 +5,7 @@ using DoujinMusicReposter.Telegram.Services;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding.Models;
 using DoujinMusicReposter.Telegram.Setup.Configuration;
+using DoujinMusicReposter.Telegram.Utils;
 using DoujinMusicReposter.Vk.Dtos;
 using Microsoft.Extensions.Options;
 using Telegram.Bot;
@@ -72,8 +73,9 @@ internal class PostProcessingWorker( // TODO: rename to something more appropria
         {
             // TODO: use serilog with tg sink
             var tgClient = botPool.GetClient();
-            await tgClient.SendMessage(tgConfig.Value.ChatAdminId, $"ВСЁ В ДЕРЬМЕ:\n{e}",
-                cancellationToken: CancellationToken.None);
+            var textParts = TextHelper.GetTgTextParts($"ВСЁ В ДЕРЬМЕ:\n{e}");
+            foreach (var textPart in textParts)
+                await tgClient.SendMessage(tgConfig.Value.ChatAdminId, textPart, cancellationToken: CancellationToken.None);
             throw;
         }
     }

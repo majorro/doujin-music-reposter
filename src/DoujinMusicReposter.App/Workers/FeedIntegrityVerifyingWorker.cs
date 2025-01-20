@@ -85,6 +85,9 @@ internal class FeedIntegrityVerifyingWorker(
         {
             // TODO: use serilog with tg sink
             var tgClient = botPool.GetClient();
+            var textParts = TextHelper.GetTgTextParts($"ВСЁ В ДЕРЬМЕ:\n{e}");
+            foreach (var textPart in textParts)
+                await tgClient.SendMessage(tgConfig.Value.ChatAdminId, textPart, cancellationToken: CancellationToken.None);
             await tgClient.SendMessage(tgConfig.Value.ChatAdminId, $"ВСЁ В ДЕРЬМЕ:\n{e}", cancellationToken: CancellationToken.None);
             throw;
         }

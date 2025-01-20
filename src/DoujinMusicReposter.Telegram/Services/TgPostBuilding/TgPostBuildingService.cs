@@ -5,6 +5,7 @@ using DoujinMusicReposter.Telegram.Services.TgPostBuilding.AudioTags;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding.Models;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding.TextEncoding;
 using DoujinMusicReposter.Telegram.Setup.Configuration;
+using DoujinMusicReposter.Telegram.Utils;
 using DoujinMusicReposter.Vk.Dtos;
 using DoujinMusicReposter.Vk.Setup.Configuration;
 using Microsoft.Extensions.Logging;
@@ -25,14 +26,11 @@ public class TgPostBuildingService(
     AudioTaggingService audioTagger) // what to post
 {
     private const int MAX_ATTACHMENT_SIZE = int.MaxValue - 100000000; // idk
-    private const int MAX_PHOTO_CAPTION_LENGTH = 1024;
-    private const int MAX_TEXT_MESSAGE_LENGTH = 4096;
     private const int POSSIBLY_BROKEN_ARCHIVE_SIZE_THRESHOLD = 1 * 1024 * 1024; // 1mb
     private static readonly HashSet<string> AudioExtensions =
     [
         ".mp3", ".wav", ".wma", ".flac", ".aac", ".alac", ".m4a", ".ape", ".wv", ".ogg", ".opus",
     ];
-    private static readonly char[] ForbiddenFileNameChars = ['\u2400', '\\', '/', ':', '*', '?', '"', '<', '>', '|'];
 
     private readonly string _localFilesDir = appConfig.Value.LocalFilesDir;
     private readonly string _botApiServerFilesDir = appConfig.Value.BotApiServerFilesDir;
@@ -54,7 +52,7 @@ public class TgPostBuildingService(
         logger.LogInformation("Building PostId={PostId}", post.Id);
         var result = new TgPost()
         {
-            TextParts = GetPreparedText(post), // TODO: try to replace vk links with tg links
+            TextParts = TextHelper.GetPreparedText(post, _vkGroupId), // TODO: try to replace vk links with tg links
             Photo = post.Photo
         };
 
@@ -273,7 +271,7 @@ public class TgPostBuildingService(
     private async Task<T[]> SaveFromStreamAsync<T>(Stream stream, string fileName, long sizeBytes, string? dirName = null)
         where T: UploadableFile, new()
     {
-        fileName = EnsureFilenameValidity(fileName);
+        fileName = TextHelper.EnsureFilenameValidity(fileName);
 
         if (sizeBytes <= MAX_ATTACHMENT_SIZE)
         {
@@ -313,44 +311,4 @@ public class TgPostBuildingService(
             return File.Create(file.LocalFullName);
         }
     }
-
-    private static string EnsureFilenameValidity(string text)
-    {
-        text = text.Trim(' ').TrimEnd('.');
-
-        return text.IndexOfAny(ForbiddenFileNameChars) == -1
-            ? text
-            : string.Join("_", text.Split(ForbiddenFileNameChars));
-    }
-
-    private string[] GetPreparedText(Post post)
-    {
-        var text = $"{post.Text}\n\n{GetVkPostLink(post)}";
-        return SplitText(text);
-    }
-
-    private static string[] SplitText(string text)
-    {
-        var result = new List<string>();
-        var curLength = 0;
-        var curStart = 0;
-        for (var i = 0; i < text.Length; i++)
-        {
-            if (text[i] == ' ')
-            {
-                var maxLength = result.Count == 0 ? MAX_PHOTO_CAPTION_LENGTH : MAX_TEXT_MESSAGE_LENGTH;
-                if (curLength + i - curStart > maxLength)
-                {
-                    result.Add(text.Substring(curStart, i - curStart));
-                    curStart = i;
-                    curLength = 0;
-                }
-            }
-            curLength++;
-        }
-        result.Add(text[curStart..]);
-        return result.ToArray();
-    }
-
-    private string GetVkPostLink(Post post) => $"https://vk.com/wall-{_vkGroupId}_{post.Id}";
 }
