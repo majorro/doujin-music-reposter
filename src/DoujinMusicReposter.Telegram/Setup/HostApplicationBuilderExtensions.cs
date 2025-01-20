@@ -27,15 +27,15 @@ public static class HostApplicationBuilderExtensions
         builder.Services.AddSingleton<EncodingRepairingService>();
         builder.Services.AddSingleton<AudioTaggingService>();
 
-        // TODO: deal with 504 Gateway Timeout
+        // TODO: do not handle 504, implement proper error handling
         var logger = sp.GetRequiredService<ILogger<TgPostBuildingService>>();
         builder.Services
-            .AddHttpClient<TgPostBuildingService>(x => x.Timeout = TimeSpan.FromMinutes(5))
-            .AddPolicyHandler(_ => HttpPolicyExtensions
-                .HandleTransientHttpError()
-                .WaitAndRetryForeverAsync(
-                    retryAttempt => TimeSpan.FromSeconds(Math.Min(60, Math.Pow(2, retryAttempt))),
-                    (result, i, _) => logger.LogWarning("Request {Request} failed with response: {Code}: {Error}, retry #{I}", result.Result.RequestMessage, (int)result.Result.StatusCode, result.Result.ReasonPhrase, i)));
+            .AddHttpClient<TgPostBuildingService>(x => x.Timeout = TimeSpan.FromMinutes(5));
+            // .AddPolicyHandler(x => HttpPolicyExtensions
+            //     .HandleTransientHttpError()
+            //     .WaitAndRetryForeverAsync(
+            //         retryAttempt => TimeSpan.FromSeconds(Math.Min(60, Math.Pow(2, retryAttempt))),
+            //         (result, i, _) => logger.LogWarning("Request {Request} failed with response: {Code}: {Error}, retry #{I}", result.Result?.RequestMessage, (int?)result.Result?.StatusCode, result.Result?.ReasonPhrase, i)));
 
         builder.Services.AddSingleton<PostsManagingService>();
 
@@ -66,7 +66,7 @@ public static class HostApplicationBuilderExtensions
                         resp.Content.ReadAsStringAsync().Result.Contains("Too many requests"))
                     .WaitAndRetryForeverAsync( // forever?
                         retryAttempt => TimeSpan.FromSeconds(8 * retryAttempt),
-                        (result, i, _) => logger.LogWarning("Request {Request} failed with response: {Code}: {Error}, retry #{I}", result.Result.RequestMessage, (int)result.Result.StatusCode, result.Result.ReasonPhrase, i)));
+                        (result, i, _) => logger.LogWarning("Request {Request} failed with response: {Code}: {Error}, retry #{I}", result.Result?.RequestMessage, (int?)result.Result?.StatusCode, result.Result?.ReasonPhrase, i)));
         }
 
         builder.Services.AddSingleton<TelegramBotClientPoolService>();

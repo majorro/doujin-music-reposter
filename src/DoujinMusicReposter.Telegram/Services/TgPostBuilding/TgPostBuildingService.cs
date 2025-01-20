@@ -260,8 +260,9 @@ public class TgPostBuildingService(
     private async Task<Stream?> AsDownloadableStreamAsync(Uri uri) // TODO: move to resilient stream method?
     {
         var request = new HttpRequestMessage(HttpMethod.Get, uri);
-        var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+        var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead); // TODO: ignore errors?
         if (response.StatusCode == HttpStatusCode.NotFound ||
+            response.StatusCode == HttpStatusCode.GatewayTimeout ||
             response.Content.Headers.ContentLength < POSSIBLY_BROKEN_ARCHIVE_SIZE_THRESHOLD)
             return null;
         response.EnsureSuccessStatusCode();
