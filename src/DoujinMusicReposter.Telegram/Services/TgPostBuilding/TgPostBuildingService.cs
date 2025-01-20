@@ -259,7 +259,7 @@ public class TgPostBuildingService(
         return audioFileParts;
     }
 
-    private async Task<Stream?> AsDownloadableStreamAsync(Uri uri)
+    private async Task<Stream?> AsDownloadableStreamAsync(Uri uri) // TODO: move to resilient stream method?
     {
         var request = new HttpRequestMessage(HttpMethod.Get, uri);
         var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
@@ -267,7 +267,7 @@ public class TgPostBuildingService(
             response.Content.Headers.ContentLength < POSSIBLY_BROKEN_ARCHIVE_SIZE_THRESHOLD)
             return null;
         response.EnsureSuccessStatusCode();
-        return new ResilientStream(await response.Content.ReadAsStreamAsync(), logger);
+        return new ResilientStream(await response.Content.ReadAsStreamAsync(), logger, () => AsDownloadableStreamAsync(uri));
     }
 
     private async Task<T[]> SaveFromStreamAsync<T>(Stream stream, string fileName, long sizeBytes, string? dirName = null)
