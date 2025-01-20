@@ -1,18 +1,22 @@
-﻿using DoujinMusicReposter.Persistence.Setup.Configuration;
+﻿using System.Text.Json;
+using DoujinMusicReposter.Persistence.Setup.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RocksDbSharp;
 
 namespace DoujinMusicReposter.Persistence;
 
-// TODO: serialize to bytes
 public class PostsRepository : IDisposable
 {
+    private readonly ILogger<PostsRepository> _logger;
     private readonly RocksDb _db;
     private readonly ColumnFamilyHandle _vkToTgCf;
     private readonly ColumnFamilyHandle _tgToVkCf;
 
-    public PostsRepository(IOptions<RocksDbConfig> dbConfig)
+    public PostsRepository(IOptions<RocksDbConfig> dbConfig, ILogger<PostsRepository> logger)
     {
+        _logger = logger;
+
         var options = new DbOptions().SetCreateIfMissing().SetCreateMissingColumnFamilies();
         var cfOptions = new ColumnFamilyOptions();
 
@@ -34,17 +38,23 @@ public class PostsRepository : IDisposable
 
         using var iterator = _db.NewIterator(_vkToTgCf);
         for (iterator.SeekToFirst(); iterator.Valid(); iterator.Next())
-            result.Add(int.Parse(iterator.StringKey()));
+            result.Add(Deserialize<int>(iterator.GetKeySpan()));
 
         return result;
     }
 
-    public IEnumerable<int>? GetByVkId(int vkId) => ToIntEnumerable(_db.Get(vkId.ToString(), _vkToTgCf));
+    public int[]? GetByVkId(int vkId)
+    {
+        var key = Serialize(vkId);
+
+        var tgIds = _db.Get(key, _vkToTgCf);
+        return tgIds is null ? null : Deserialize<int[]>(tgIds);
+    }
 
     public void Put(int vkId, IEnumerable<int> tgIds)
     {
-        var vkIdKey = vkId.ToString();
-        var tgIdsKey = FromArray(tgIds);
+        var vkIdKey = Serialize(vkId);
+        var tgIdsKey = Serialize(tgIds);
 
         _db.Put(vkIdKey, tgIdsKey, _vkToTgCf);
         _db.Put(tgIdsKey, vkIdKey, _tgToVkCf);
@@ -52,11 +62,13 @@ public class PostsRepository : IDisposable
 
     public void RemoveByVkId(int vkId)
     {
-        var vkIdKey = vkId.ToString();
+        var vkIdKey = Serialize(vkId);
         var tgIdsKey = _db.Get(vkIdKey, _vkToTgCf);
 
         _db.Remove(vkIdKey, _vkToTgCf);
         _db.Remove(tgIdsKey, _tgToVkCf);
+
+        _logger.LogInformation("Removed vkId {VkId} with tgIds {TgIds}", vkId, string.Join("-", Deserialize<int[]>(tgIdsKey)));
     }
 
     public void ForceSaveChanges() => _db.Flush(new FlushOptions());
@@ -67,7 +79,7 @@ public class PostsRepository : IDisposable
         GC.SuppressFinalize(this);
     }
 
-    private static string FromArray<T>(IEnumerable<T> keys) => string.Join('-', keys);
-    private static IEnumerable<int>? ToIntEnumerable(string? keys) => keys?.Split('-').Select(int.Parse);
+    private static ReadOnlySpan<byte> Serialize<T>(T obj) => JsonSerializer.SerializeToUtf8Bytes(obj);
+    private static T Deserialize<T>(ReadOnlySpan<byte> bytes) => JsonSerializer.Deserialize<T>(bytes)!;
 
 }
