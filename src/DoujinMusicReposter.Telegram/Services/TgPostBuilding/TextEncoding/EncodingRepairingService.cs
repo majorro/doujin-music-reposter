@@ -44,7 +44,7 @@ public class EncodingRepairingService
                 continue;
 
             var detected = CharsetDetector.DetectFromBytes(enc.GetBytes(brokenString)).Detected;
-            if (detected is not null && detected.Encoding.WebName == dec.WebName && detected.Confidence > 0.6)
+            if (detected is not null && detected.Encoding?.WebName == dec.WebName && detected.Confidence > 0.6)
                 return recoded;
         }
 
@@ -56,7 +56,7 @@ public class EncodingRepairingService
                 continue;
 
             var detected = CharsetDetector.DetectFromBytes(enc.GetBytes(brokenString)).Detected;
-            if (detected is null || detected.Encoding.WebName != enc.WebName) // not sure
+            if (detected is null || detected.Encoding?.WebName != enc.WebName) // not sure
             {
                 var test = Encoding.GetEncoding(Eur).GetString(Encoding.GetEncoding(Eur).GetBytes(brokenString)); // unholy heuristics
                 if (test != brokenString)
@@ -72,7 +72,7 @@ public class EncodingRepairingService
                 continue;
 
             var detected = CharsetDetector.DetectFromBytes(enc.GetBytes(brokenString)).Detected;
-            if (detected is null || detected.Encoding.WebName != enc.WebName) // not sure
+            if (detected is null || detected.Encoding?.WebName != enc.WebName) // not sure
             {
                 var test = Encoding.GetEncoding(Eur).GetString(Encoding.GetEncoding(Eur).GetBytes(brokenString)); // unholy heuristics
                 if (test != brokenString)

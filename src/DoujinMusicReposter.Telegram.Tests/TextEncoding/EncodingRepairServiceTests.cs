@@ -33,6 +33,8 @@ public class EncodingRepairServiceTests
     [InlineData("Nodon - Olá Meu nome é")]
     [InlineData("ginrei - Áed")]
     [InlineData("introspecção")]
+    [InlineData("11. Distance (Jordi K-staña Remix).mp3")]
+    [InlineData("DJ'TEKINA//SOMETHING feat. YUC'e")]
     public void TryFix_ShouldNotChangeString_WhenCorrect(string before)
     {
         var after = _encodingRepairer.TryFix(before);
