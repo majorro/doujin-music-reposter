@@ -49,6 +49,7 @@ public class PostsManagingService(
         return result;
     }
 
+    // TODO: send photo with the last textpart
     private async Task<List<Message>> SendTitleAsync(TgPost post)
     {
         var botClient = botPool.GetClient();

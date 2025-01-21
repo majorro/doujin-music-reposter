@@ -11,6 +11,7 @@ using Microsoft.Extensions.Options;
 namespace DoujinMusicReposter.Vk.Http;
 
 // TODO: try https://dev.vk.com/ru/method/execute
+// TODO: request logging
 public class VkApiClient(
     ILogger<VkApiClient> logger,
     IOptions<VkConfig> vkConfig,

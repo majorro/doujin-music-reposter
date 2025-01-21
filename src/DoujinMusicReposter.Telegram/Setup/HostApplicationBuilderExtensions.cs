@@ -66,7 +66,7 @@ public static class HostApplicationBuilderExtensions
                         resp.Content.ReadAsStringAsync().Result.Contains("Too many requests"))
                     .WaitAndRetryForeverAsync( // forever?
                         retryAttempt => TimeSpan.FromSeconds(8 * retryAttempt),
-                        (result, i, _) => logger.LogWarning("Request {Request} failed with response: {Code}: {Error}, retry #{I}", result.Result?.RequestMessage, (int?)result.Result?.StatusCode, result.Result?.ReasonPhrase, i)));
+                        (result, i, _) => logger.LogWarning("Request {Request} failed with response: {Code}: {Error}, retry #{I}", result.Result?.RequestMessage, (int?)result.Result?.StatusCode, result.Result?.ReasonPhrase, i))); // TODO: rewrite
         }
 
         builder.Services.AddSingleton<TelegramBotClientPoolService>();

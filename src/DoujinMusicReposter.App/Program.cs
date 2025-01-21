@@ -17,6 +17,7 @@ builder
     .AddTelegram()
     .AddAppWorkers();
 
+// TODO: maybe add some post trace
 // TODO: cleanup downloads directory in case of exception
 var host = builder.Build();
 host.Run();

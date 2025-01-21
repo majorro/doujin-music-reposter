@@ -31,6 +31,7 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
         return new VkResponse<GetPostsResponse>(new GetPostsResponse(totalCount, posts));
     }
 
+    // TODO: add audiofiles
     public VkResponse<GetCommentsResponse> ParseGetCommentsResponse(Stream stream)
     {
         using var doc = JsonDocument.Parse(stream);

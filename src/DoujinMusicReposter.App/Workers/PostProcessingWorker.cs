@@ -12,7 +12,7 @@ using Telegram.Bot;
 
 namespace DoujinMusicReposter.App.Workers;
 
-internal class PostProcessingWorker( // TODO: rename to something more appropriate and meaningful
+internal class PostProcessingWorker(
     ILogger<PostProcessingWorker> logger,
     ChannelReader<Post> postBuildingQueueReader,
     TgPostBuildingService postBuilder,
