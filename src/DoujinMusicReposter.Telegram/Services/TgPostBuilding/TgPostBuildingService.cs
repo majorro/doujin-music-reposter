@@ -126,39 +126,45 @@ public class TgPostBuildingService(
         var dirName = Path.GetFileName(Path.GetDirectoryName(archiveFiles[0].LocalFullName))!;
 
         var readerOptions = new ReaderOptions { LeaveStreamOpen = true };
-        IReader tReader;
-        try { tReader = ReaderFactory.Open(stream, readerOptions); }
+        try
+        {
+            using var reader = ReaderFactory.Open(stream, readerOptions);
+            while (reader.MoveToNextEntry()) // TODO: fix tags in audio and archive
+            {
+                var entry = reader.Entry;
+                if (entry.IsDirectory || !IsAudioFile(entry))
+                    continue;
+
+                await using var entryStream = _memoryStreamPool.GetStream("archiveEntry", entry.Size);
+                await using var es = reader.OpenEntryStream();
+                await es.CopyToAsync(entryStream);
+
+                var entryFileName = encodingRepairer.TryFix(Path.GetFileName(entry.Key!))!;
+                var (title, artist, durationSeconds) = audioTagger.ReadAndFix(entryStream, entryFileName);
+                var audioFileParts = await SaveAudioFromStreamAsync(
+                    entryStream,
+                    title,
+                    artist,
+                    durationSeconds,
+                    trackNumber,
+                    entry.Size,
+                    entryFileName,
+                    dirName
+                );
+
+                result.AddRange(audioFileParts);
+                ++trackNumber;
+            }
+        }
         catch (InvalidOperationException e) // broken stream
         {
             logger.LogWarning(e, "Failed to open archive: {FileName} ({Link})", archive.FileName, archive.Link);
             return [];
         }
-        using var reader = tReader; // ok?
-        while (reader.MoveToNextEntry()) // TODO: fix tags in audio and archive
+        catch (InvalidFormatException e) // broken archive/bug https://github.com/adamhathcock/sharpcompress/issues/890
         {
-            var entry = reader.Entry;
-            if (entry.IsDirectory || !IsAudioFile(entry))
-                continue;
-
-            await using var entryStream = _memoryStreamPool.GetStream("archiveEntry", entry.Size);
-            await using var es = reader.OpenEntryStream();
-            await es.CopyToAsync(entryStream);
-
-            var entryFileName = encodingRepairer.TryFix(Path.GetFileName(entry.Key!))!;
-            var (title, artist, durationSeconds) = audioTagger.ReadAndFix(entryStream, entryFileName);
-            var audioFileParts = await SaveAudioFromStreamAsync(
-                entryStream,
-                title,
-                artist,
-                durationSeconds,
-                trackNumber,
-                entry.Size,
-                entryFileName,
-                dirName
-            );
-
-            result.AddRange(audioFileParts);
-            ++trackNumber;
+            logger.LogWarning(e, "Failed to read archive: {FileName} ({Link})", archive.FileName, archive.Link);
+            return [];
         }
 
         return result;
@@ -269,8 +275,9 @@ public class TgPostBuildingService(
         return new ResilientStream(await response.Content.ReadAsStreamAsync(), logger, () => AsDownloadableStreamAsync(uri));
     }
 
-    private async Task<T[]> SaveFromStreamAsync<T>(Stream stream, string fileName, long sizeBytes, string? dirName = null)
-        where T: UploadableFile, new()
+    private async Task<T[]> SaveFromStreamAsync<T>(Stream stream, string fileName, long sizeBytes,
+        string? dirName = null)
+        where T : UploadableFile, new()
     {
         fileName = TextHelper.EnsureFilenameValidity(fileName);
 
@@ -295,6 +302,7 @@ public class TgPostBuildingService(
                     break;
                 await partFileStream.WriteAsync(buffer.AsMemory(0, read));
             }
+
             result.Add(file);
         }
 
