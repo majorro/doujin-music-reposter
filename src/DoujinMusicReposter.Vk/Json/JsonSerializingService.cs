@@ -173,6 +173,10 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
             }
         }
 
+        if (string.IsNullOrEmpty(result.Text) && result.Photo is null &&
+            result.AudioArchives.Count == 0 && result.Audios.Count == 0)
+            return null; // repost
+
         return result;
     }
 
