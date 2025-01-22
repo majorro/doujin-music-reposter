@@ -8,6 +8,8 @@ DotEnv.TryLoad();
 
 var builder = Host.CreateApplicationBuilder(args);
 
+builder.AddLogging();
+
 builder
     .AddShared()
     .AddPersistence();

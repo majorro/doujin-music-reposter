@@ -6,7 +6,6 @@ using DoujinMusicReposter.Telegram.Setup.Configuration;
 using DoujinMusicReposter.Vk.Dtos;
 using DoujinMusicReposter.Vk.Http;
 using Microsoft.Extensions.Options;
-using Telegram.Bot;
 
 namespace DoujinMusicReposter.App.Workers;
 
@@ -24,11 +23,9 @@ internal class FeedIntegrityVerifyingWorker(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        try
+        while (!stoppingToken.IsCancellationRequested)
         {
-            while (!stoppingToken.IsCancellationRequested)
-            {
-                HashSet<int> dbPostIds, vkPostIds;
+            HashSet<int> dbPostIds, vkPostIds;
 
                 await semaphore.WaitAsync(stoppingToken);
                 try
@@ -77,19 +74,8 @@ internal class FeedIntegrityVerifyingWorker(
                     postsDb.RemoveByVkId(id);
                 }
 
-                logger.LogInformation("Finished feed integrity verification");
-                await Task.Delay(TimeSpan.FromDays(PeriodDays), stoppingToken);
-            }
-        }
-        catch (Exception e)
-        {
-            // TODO: use serilog with tg sink
-            var tgClient = botPool.GetClient();
-            var textParts = TextHelper.GetTgTextParts($"ВСЁ В ДЕРЬМЕ:\n{e}");
-            foreach (var textPart in textParts)
-                await tgClient.SendMessage(tgConfig.Value.ChatAdminId, textPart, cancellationToken: CancellationToken.None);
-            await tgClient.SendMessage(tgConfig.Value.ChatAdminId, $"ВСЁ В ДЕРЬМЕ:\n{e}", cancellationToken: CancellationToken.None);
-            throw;
+            logger.LogInformation("Finished feed integrity verification");
+            await Task.Delay(TimeSpan.FromDays(PeriodDays), stoppingToken);
         }
     }
 

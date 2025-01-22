@@ -5,10 +5,8 @@ using DoujinMusicReposter.Telegram.Services;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding.Models;
 using DoujinMusicReposter.Telegram.Setup.Configuration;
-using DoujinMusicReposter.Telegram.Utils;
 using DoujinMusicReposter.Vk.Dtos;
 using Microsoft.Extensions.Options;
-using Telegram.Bot;
 
 namespace DoujinMusicReposter.App.Workers;
 
@@ -60,24 +58,12 @@ internal class PostProcessingWorker(
             FullMode = BoundedChannelFullMode.Wait,
         });
 
-        try
-        {
-            var firstTask = await Task.WhenAny(
-                StartPostingAsync(postingQueue.Reader, ctk),
-                StartPostBuildingAsync(postingQueue.Writer, ctk)
-            );
-            if (firstTask.Exception is not null) // huh?
-                throw firstTask.Exception;
-        }
-        catch (Exception e)
-        {
-            // TODO: use serilog with tg sink
-            var tgClient = botPool.GetClient();
-            var textParts = TextHelper.GetTgTextParts($"ВСЁ В ДЕРЬМЕ:\n{e}");
-            foreach (var textPart in textParts)
-                await tgClient.SendMessage(tgConfig.Value.ChatAdminId, textPart, cancellationToken: CancellationToken.None);
-            throw;
-        }
+        var firstTask = await Task.WhenAny(
+            StartPostingAsync(postingQueue.Reader, ctk),
+            StartPostBuildingAsync(postingQueue.Writer, ctk)
+        );
+        if (firstTask.Exception is not null) // huh?
+            throw firstTask.Exception;
     }
 
     private async Task StartPostBuildingAsync(ChannelWriter<(int Id, TgPost TgPost)> postingQueueWriter, CancellationToken ctk)

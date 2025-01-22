@@ -1,6 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using Polly;
-using Polly.Retry;
 
 namespace DoujinMusicReposter.Telegram.Services.TgPostBuilding;
 
@@ -17,7 +15,7 @@ public class ResilientStream(Stream stream, ILogger logger, Func<Task<Stream?>> 
         }
         catch (IOException e) when (e.Message.Contains("The response ended prematurely"))
         {
-            logger.LogWarning("Failed to read from stream: {Error}, creating new", e.Message);
+            logger.LogWarning(e, "Failed to read from stream, creating new");
             await _stream.DisposeAsync();
             await Task.Delay(5000, ctk); // TODO: determine delay
             _stream = (await newStreamFunc())!;
@@ -34,7 +32,7 @@ public class ResilientStream(Stream stream, ILogger logger, Func<Task<Stream?>> 
         }
         catch (IOException e) when (e.Message.Contains("The response ended prematurely"))
         {
-            logger.LogWarning("Failed to read from stream: {Error}, creating new", e.Message);
+            logger.LogWarning(e, "Failed to read from stream, creating new");
             await _stream.DisposeAsync();
             await Task.Delay(5000, ctk); // TODO: determine delay
             _stream = (await newStreamFunc())!;
