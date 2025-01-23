@@ -31,11 +31,12 @@ public class PostsManagingService(
             var audioArchiveMessages = await SendAudioArchiveAsync(post);
             result.AddRange(audioArchiveMessages.Select(x => x.MessageId));
         }
-        catch
+        catch (Exception e)
         {
+            logger.LogError(e, "Failed to post");
             if (result.Count != 0)
                 await DeleteMessagesAsync(result.ToArray());
-            throw;
+            return await SendAsync(post); // TODO: check if that is needed
         }
 
         return result;
@@ -53,11 +54,19 @@ public class PostsManagingService(
         };
 
         if (post.Photo is not null)
-            result.Add(await botClient.SendPhoto(
-                chatId: _chatId,
-                photo: new InputFileUrl(post.Photo),
-                caption: post.TextParts[0],
-                showCaptionAboveMedia: true));
+            try
+            {
+                result.Add(await botClient.SendPhoto(
+                    chatId: _chatId,
+                    photo: new InputFileUrl(post.Photo),
+                    caption: post.TextParts[0],
+                    showCaptionAboveMedia: true));
+            }
+            catch (ApiRequestException e) when (e.ErrorCode == 400)
+            {
+                logger.LogWarning(e, "Failed to send photo: {Message}", e.Message);
+                result.Add(await botClient.SendMessage(chatId: _chatId, text: post.TextParts[0], linkPreviewOptions: linkPreviewOptions));
+            }
         else
             result.Add(await botClient.SendMessage(chatId: _chatId, text: post.TextParts[0], linkPreviewOptions: linkPreviewOptions));
 

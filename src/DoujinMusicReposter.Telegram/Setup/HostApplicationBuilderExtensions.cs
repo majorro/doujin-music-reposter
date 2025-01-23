@@ -56,14 +56,18 @@ public static class HostApplicationBuilderExtensions
                 {
                     var token = botConfig.Tokens[i];
                     var apiServerUri = botConfig.ApiServerUris[i % botConfig.ApiServerUris.Length];
-                    TelegramBotClientOptions options = new(token, apiServerUri);
+                    TelegramBotClientOptions options = new(token, apiServerUri)
+                    {
+                        RetryThreshold = int.MaxValue,
+                        RetryCount = 10,
+                    };
                     return new TelegramBotClient(options, httpClient);
                 })
                 .AddPolicyHandler(_ => HttpPolicyExtensions
                     .HandleTransientHttpError()
                     .OrResult(resp =>
-                        resp.StatusCode == HttpStatusCode.BadRequest &&
-                        resp.Content.ReadAsStringAsync().Result.Contains("Too many requests"))
+                        resp.StatusCode == HttpStatusCode.BadRequest && // lmao
+                        resp.Content.ReadAsStringAsync().Result.Contains("too many requests", StringComparison.CurrentCultureIgnoreCase))
                     .WaitAndRetryForeverAsync( // forever?
                         retryAttempt => TimeSpan.FromSeconds(8 * retryAttempt),
                         (result, i, _) => logger.LogWarning("Request {Request} failed with response: {Code}: {Error}, retry #{I}", result.Result?.RequestMessage, (int?)result.Result?.StatusCode, result.Result?.ReasonPhrase, i))); // TODO: rewrite
