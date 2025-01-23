@@ -77,7 +77,7 @@ public class TgPostBuildingService(
                 if (audioFiles.Count == 0)
                 {
                     foreach (var audioArchive in archiveFiles)
-                        File.Delete(audioArchive.LocalFullName);
+                        audioArchive.Dispose();
                     continue;
                 }
 
@@ -95,8 +95,7 @@ public class TgPostBuildingService(
 
         if (result.AudioFiles.Count == 0 && post.Audios.Count != 0)
         {
-            var dir = Path.GetRandomFileName();
-            var audioFileTasks = post.Audios.Select((x, i) => SaveAudioAsync(x, i, dir)).ToArray();
+            var audioFileTasks = post.Audios.Select(SaveAudioAsync).ToArray();
             await Task.WhenAll(audioFileTasks);
             result.AudioFiles = audioFileTasks.SelectMany(x => x.Result).ToList();
         }
@@ -123,7 +122,6 @@ public class TgPostBuildingService(
         var result = new List<AudioFile>();
         var trackNumber = 0;
         var archive = archiveFiles[0].AudioArchive;
-        var dirName = Path.GetFileName(Path.GetDirectoryName(archiveFiles[0].LocalFullName))!;
 
         var readerOptions = new ReaderOptions { LeaveStreamOpen = true };
         try
@@ -148,8 +146,7 @@ public class TgPostBuildingService(
                     durationSeconds,
                     trackNumber,
                     entry.Size,
-                    entryFileName,
-                    dirName
+                    entryFileName
                 );
 
                 result.AddRange(audioFileParts);
@@ -212,7 +209,7 @@ public class TgPostBuildingService(
         return combinedFs;
     }
 
-    private async Task<AudioFile[]> SaveAudioAsync(Audio audio, int trackNumber, string dirName)
+    private async Task<AudioFile[]> SaveAudioAsync(Audio audio, int trackNumber)
     {
         await using var stream = await AsDownloadableStreamAsync(audio.Link);
         if (stream == null)
@@ -230,8 +227,7 @@ public class TgPostBuildingService(
             audio.DurationSeconds,
             trackNumber,
             0, // let's hope there won't be any 2gb mp3s xd
-            "",
-            dirName
+            ""
         );
     }
 
@@ -242,8 +238,7 @@ public class TgPostBuildingService(
         int durationSeconds,
         int trackNumber,
         long sizeBytes,
-        string fileName,
-        string dirName)
+        string fileName)
     {
         // TODO: convert with NAudio in case of any issues
         if (!string.IsNullOrWhiteSpace(title) && !string.IsNullOrWhiteSpace(artist))
@@ -252,7 +247,7 @@ public class TgPostBuildingService(
             fileName = $"{trackNumber + 1:D2}. {title}.mp3";
         else
             fileName = Path.ChangeExtension(fileName, ".mp3");
-        var audioFileParts = await SaveFromStreamAsync<AudioFile>(stream, fileName, sizeBytes, dirName);
+        var audioFileParts = await SaveFromStreamAsync<AudioFile>(stream, fileName, sizeBytes);
         Array.ForEach(audioFileParts, x =>
         {
             x.Title = title;
@@ -275,15 +270,14 @@ public class TgPostBuildingService(
         return new ResilientStream(await response.Content.ReadAsStreamAsync(), logger, () => AsDownloadableStreamAsync(uri));
     }
 
-    private async Task<T[]> SaveFromStreamAsync<T>(Stream stream, string fileName, long sizeBytes,
-        string? dirName = null)
+    private async Task<T[]> SaveFromStreamAsync<T>(Stream stream, string fileName, long sizeBytes)
         where T : UploadableFile, new()
     {
         fileName = TextHelper.EnsureFilenameValidity(fileName);
 
         if (sizeBytes <= MAX_ATTACHMENT_SIZE)
         {
-            await using var fileStream = CreateFile(fileName, out var file);
+            await using var fileStream = UploadableFile.CreateAndOpen<T>(fileName, _localFilesDir, _botApiServerFilesDir, out var file);
             await stream.CopyToAsync(fileStream);
             return [file];
         }
@@ -294,7 +288,7 @@ public class TgPostBuildingService(
         for (long offset = 0; offset < sizeBytes; offset += MAX_ATTACHMENT_SIZE)
         {
             var partFileName = $"{fileName}.{partNumber++:D3}";
-            await using var partFileStream = CreateFile(partFileName, out var file);
+            await using var partFileStream = UploadableFile.CreateAndOpen<T>(partFileName, _localFilesDir, _botApiServerFilesDir, out var file);
             for (long partOffset = 0; partOffset < MAX_ATTACHMENT_SIZE; partOffset += buffer.Length)
             {
                 var read = await stream.ReadAsync(buffer);
@@ -307,17 +301,5 @@ public class TgPostBuildingService(
         }
 
         return result.ToArray();
-
-        FileStream CreateFile(string fName, out T file)
-        {
-            var dir = dirName ?? Path.GetRandomFileName();
-            file = new T
-            {
-                ServerFullName = Path.Combine(_botApiServerFilesDir, dir, fName),
-                LocalFullName = Path.Combine(_localFilesDir, dir, fName),
-            };
-            Directory.CreateDirectory(Path.GetDirectoryName(file.LocalFullName)!);
-            return File.Create(file.LocalFullName);
-        }
     }
 }

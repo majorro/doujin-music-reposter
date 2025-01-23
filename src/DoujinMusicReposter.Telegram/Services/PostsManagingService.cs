@@ -21,9 +21,6 @@ public class PostsManagingService(
     public async Task<List<int>> SendAsync(TgPost post)
     {
         var result = new List<int>();
-        var filesDir =
-            Path.GetDirectoryName(post.AudioArchives.FirstOrDefault()?.LocalFullName) ??
-            Path.GetDirectoryName(post.AudioFiles.FirstOrDefault()?.LocalFullName);
 
         try
         {
@@ -39,11 +36,6 @@ public class PostsManagingService(
             if (result.Count != 0)
                 await DeleteMessagesAsync(result.ToArray());
             throw;
-        }
-        finally
-        {
-            if (filesDir is not null && Directory.Exists(filesDir))
-                Directory.Delete(filesDir, true);
         }
 
         return result;

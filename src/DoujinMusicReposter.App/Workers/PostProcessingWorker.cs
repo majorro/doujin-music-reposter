@@ -86,7 +86,9 @@ internal class PostProcessingWorker(
         {
             while (!ctk.IsCancellationRequested)
             {
-                var (postId, tgPost) = await postingQueueReader.ReadAsync(ctk);
+                var post = await postingQueueReader.ReadAsync(ctk);
+                var postId = post.Id;
+                using var tgPost = post.TgPost;
                 if (postsDb.GetByVkId(postId) is not null)
                     continue;
 
