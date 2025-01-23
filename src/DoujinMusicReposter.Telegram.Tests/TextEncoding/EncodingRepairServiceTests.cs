@@ -44,6 +44,16 @@ public class EncodingRepairServiceTests
     }
 
     [Theory]
+    [InlineData("中島岬&&#22338;本千明", "中島岬&坂本千明")]
+    public void TryFix_ShouldChangeString_WhenHtmlEncoded(string before, string after)
+    {
+        var afterActual = _encodingRepairer.TryFix(before);
+
+        afterActual.Should().NotBeNull();
+        afterActual.Should().Be(after);
+    }
+
+    [Theory]
     [InlineData("04 Г~ГЙБ[Г{Б[ГЛБEГ}ГWГbГNБEГKБ[ГЛ.mp3", Cp866)]
     [InlineData("04.ГCГOГМБ[ГУБiIgraineБj.mp3", Cp866)]
     [InlineData("ОWргГTГNГКГtГ@ГCГX.mp3", Cp866)]

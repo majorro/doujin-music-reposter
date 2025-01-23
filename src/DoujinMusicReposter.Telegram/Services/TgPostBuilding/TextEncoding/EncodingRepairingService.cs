@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Net;
+using System.Text;
 using Microsoft.Extensions.Logging;
 using UtfUnknown;
 using static DoujinMusicReposter.Telegram.Services.TgPostBuilding.TextEncoding.EncodingConstants;
@@ -25,6 +26,11 @@ public class EncodingRepairingService
         (Iso15, Kr),
     ];
 
+    private static readonly Dictionary<string, string> Unrecoverable = new()
+    {
+        { "Én†Dë~", "蒼咲雫" }
+    };
+
     public EncodingRepairingService(ILogger<EncodingRepairingService> logger)
     {
         _logger = logger;
@@ -35,6 +41,9 @@ public class EncodingRepairingService
     {
         if (brokenString is null)
             return null;
+
+        if (Unrecoverable.TryGetValue(brokenString, out var fixedString))
+            return fixedString;
 
         // CharsetDetector perfectly detects japanese, so we can start with it
         foreach (var (from, to) in Japanese)
@@ -80,6 +89,8 @@ public class EncodingRepairingService
             }
         }
 
+        brokenString = WebUtility.HtmlDecode(brokenString);
+
         return brokenString; // isn't it?
     }
 
@@ -91,8 +102,10 @@ public class EncodingRepairingService
         catch { return (null, enc, dec); }
     }
 
-    public static void PrintPossibleEncodings(string brokenString)
+    public static void PrintPossibleEncodings()
     {
+        const string brokenString = "Én†Dë~";
+
         var encodings = Japanese.Concat(Chinese).Concat(Korean);
         foreach (var (from, to) in encodings)
         {
