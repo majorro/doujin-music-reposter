@@ -84,7 +84,7 @@ public class TgPostBuildingService(
                 result.AudioFiles.AddRange(audioFiles);
             }
 
-            // TODO: check for validity
+            // TODO: check archive for validity
             result.AudioArchives.AddRange(archiveFiles);
         }
         if (result.AudioFiles.All(x => char.IsDigit(x.FileName[0]) && (x.FileName[1] == '_' || x.FileName[2] == '_')))
@@ -158,7 +158,9 @@ public class TgPostBuildingService(
             logger.LogWarning(e, "Failed to open archive: {FileName} ({Link})", archive.FileName, archive.Link);
             return [];
         }
-        catch (InvalidFormatException e) // broken archive/bug https://github.com/adamhathcock/sharpcompress/issues/890
+        catch (Exception e) when (e is
+                                      InvalidFormatException or // broken archive/bug https://github.com/adamhathcock/sharpcompress/issues/890
+                                      EndOfStreamException) // like this https://vk.com/wall-60027733_20309
         {
             logger.LogWarning(e, "Failed to read archive: {FileName} ({Link})", archive.FileName, archive.Link);
             return [];
@@ -205,6 +207,7 @@ public class TgPostBuildingService(
             await using var fs = File.OpenRead(archiveFile.LocalFullName);
             await fs.CopyToAsync(combinedFs);
         }
+        combinedFs.Position = 0;
 
         return combinedFs;
     }
@@ -283,7 +286,7 @@ public class TgPostBuildingService(
         }
 
         var result = new List<T>();
-        var partNumber = 0;
+        var partNumber = 1;
         var buffer = ArrayPool<byte>.Shared.Rent(16 * 1024 * 1024); // 16mb
         for (long offset = 0; offset < sizeBytes; offset += MAX_ATTACHMENT_SIZE)
         {

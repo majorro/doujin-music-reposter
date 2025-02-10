@@ -36,7 +36,7 @@ public class PostsManagingService(
             logger.LogError(e, "Failed to post");
             if (result.Count != 0)
                 await DeleteMessagesAsync(result.ToArray());
-            return await SendAsync(post); // TODO: check if that is needed
+            return [];
         }
 
         return result;
@@ -112,7 +112,7 @@ public class PostsManagingService(
             1 => [await botClient.SendDocument(chatId: _chatId, document: new InputFileUrl($"file://{post.AudioArchives[0].ServerFullName}"))],
             _ => await botClient.SendMediaGroup(
                 chatId: _chatId,
-                media: post.AudioArchives!.Select(x => new InputMediaDocument(new InputFileUrl($"file://{x.ServerFullName}")))
+                media: post.AudioArchives!.OrderBy(x => x.FileName).Select(x => new InputMediaDocument(new InputFileUrl($"file://{x.ServerFullName}")))
             )
         };
 

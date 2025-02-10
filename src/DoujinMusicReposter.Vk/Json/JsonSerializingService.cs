@@ -25,7 +25,11 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
         {
             var postDto = DeserializePost(post);
             if (postDto is not null) posts.Add(postDto);
-            else logger.LogWarning("Failed to deserialize post: {Post}", post.GetRawText());
+            else
+            {
+                post.TryGetProperty("id", out var id);
+                logger.LogWarning("Failed to deserialize post: PostId={PostId}", id);
+            }
         }
 
         return new VkResponse<GetPostsResponse>(new GetPostsResponse(totalCount, posts));
@@ -106,7 +110,11 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
             var post = update.GetProperty("object");
             var postDto = DeserializePost(post);
             if (postDto is not null) posts.Add(postDto);
-            else logger.LogWarning("Failed to deserialize post: {Post}", post.GetRawText());
+            else
+            {
+                post.TryGetProperty("id", out var id);
+                logger.LogWarning("Failed to deserialize post: PostId={PostId}", id);
+            }
         }
 
         return new VkResponse<GetNewEventsResponse>(new GetNewEventsResponse(timestamp, posts));
@@ -175,7 +183,7 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
         }
 
         if (string.IsNullOrEmpty(result.Text) && result.Photo is null &&
-            result.AudioArchives.Count == 0 && result.Audios.Count == 0)
+            result.AudioArchives.Count == 0 && result.Audios.Count == 0) // TODO: return something else? for logging purposes
             return null; // repost
 
         return result;

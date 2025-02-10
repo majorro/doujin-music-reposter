@@ -65,6 +65,9 @@ public class PostsRepository : IDisposable
         var vkIdKey = Serialize(vkId);
         var tgIdsKey = _db.Get(vkIdKey, _vkToTgCf);
 
+        if (tgIdsKey is null)
+            throw new ArgumentException("Key not found", nameof(vkId));
+
         _db.Remove(vkIdKey, _vkToTgCf);
         _db.Remove(tgIdsKey, _tgToVkCf);
 

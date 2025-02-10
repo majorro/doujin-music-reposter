@@ -30,7 +30,7 @@ public static class HostApplicationBuilderExtensions
         // TODO: do not handle 504, implement proper error handling
         var logger = sp.GetRequiredService<ILogger<TgPostBuildingService>>();
         builder.Services
-            .AddHttpClient<TgPostBuildingService>(x => x.Timeout = TimeSpan.FromMinutes(5));
+            .AddHttpClient<TgPostBuildingService>(x => x.Timeout = TimeSpan.FromMinutes(10));
             // .AddPolicyHandler(x => HttpPolicyExtensions
             //     .HandleTransientHttpError()
             //     .WaitAndRetryForeverAsync(
