@@ -1,6 +1,7 @@
 ﻿using System.Buffers;
 using System.Diagnostics;
 using System.Net;
+using System.Text.RegularExpressions;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding.AudioTags;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding.Models;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding.TextEncoding;
@@ -17,7 +18,7 @@ using SharpCompress.Readers;
 namespace DoujinMusicReposter.Telegram.Services.TgPostBuilding;
 
 // TODO: refactor
-public class TgPostBuildingService(
+public partial class TgPostBuildingService(
     ILogger<TgPostBuildingService> logger,
     IOptions<TgConfig> appConfig,
     IOptions<VkConfig> vkConfig,
@@ -47,6 +48,9 @@ public class TgPostBuildingService(
         ThrowExceptionOnToArray = true,
     });
 
+    [GeneratedRegex(@"Disc\s\d|CD\d", RegexOptions.IgnoreCase)]
+    private static partial Regex CdFileNameRegex();
+
     public async Task<TgPost> BuildAsync(Post post)
     {
         logger.LogInformation("Building PostId={PostId}", post.Id);
@@ -71,7 +75,7 @@ public class TgPostBuildingService(
             .Select(x => x.Result);
         foreach (var archiveFiles in audioArchiveFiles)
         {
-            if (result.AudioFiles.Count == 0)
+            if (result.AudioFiles.Count == 0 || CdFileNameRegex().IsMatch(archiveFiles[0].FileName))
             {
                 var audioFiles = await SaveAudioFilesAsync(archiveFiles);
                 if (audioFiles.Count == 0)
