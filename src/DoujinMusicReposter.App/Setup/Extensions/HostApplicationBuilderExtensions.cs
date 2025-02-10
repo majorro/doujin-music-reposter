@@ -15,6 +15,8 @@ public static class HostApplicationBuilderExtensions
     {
         builder.Configure<SerilogConfig>();
 
+        // TODO: move to config
+        // TODO: implement a custom enricher for source context: https://stackoverflow.com/a/75332511/10850306
         const string outputTemplate = "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] ({SourceContext}) {Message:lj}{NewLine}{Exception}";
         builder.Services.AddSerilog((sp, config) =>
         {

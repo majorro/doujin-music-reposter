@@ -15,11 +15,10 @@ internal class FeedIntegrityVerifyingWorker(
     SemaphoreSlim semaphore,
     IVkApiClient vkClient,
     PostsManagingService postsManager,
-    PostsRepository postsDb,
-    TelegramBotClientPoolService botPool,
-    IOptions<TgConfig> tgConfig) : BackgroundService
+    PostsRepository postsDb) : BackgroundService
 {
-    private const int PeriodDays = 7; // TODO: to config
+    private const int PERIOD_DAYS = 7; // TODO: to config
+    private static readonly int[] SkipIds = [47884]; // TODO: to config
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -27,55 +26,52 @@ internal class FeedIntegrityVerifyingWorker(
         {
             HashSet<int> dbPostIds, vkPostIds;
 
-                await semaphore.WaitAsync(stoppingToken);
-                try
+            await semaphore.WaitAsync(stoppingToken);
+            try
+            {
+                logger.LogInformation("Started feed integrity verification");
+                var vkPosts = await ReadAllPostsAsync();
+                vkPosts = vkPosts.Where(x => !SkipIds.Contains(x.Id)).ToList();
+                logger.LogInformation("Read {Count} posts", vkPosts.Count);
+
+                vkPostIds = vkPosts.Select(p => p.Id).ToHashSet();
+                dbPostIds = postsDb.GetAllVkIds().ToHashSet();
+
+                var toAdd = vkPostIds.Except(dbPostIds).ToArray();
+                logger.LogInformation("Found {Count} unposted posts", toAdd.Length);
+                foreach (var id in toAdd)
                 {
-                    logger.LogInformation("Started feed integrity verification");
-                    var vkPosts = await ReadAllPostsAsync();
-                    // vkPosts = [vkPosts.Single(x => x.Id == 1756)]; // TODO: remove
-                    // vkPosts = vkPosts.Skip(869).Take(1000).ToList(); // TODO: remove
-                    logger.LogInformation("Read {Count} posts", vkPosts.Count);
+                    var post = vkPosts.First(p => p.Id == id); // not single because vk moment
 
-                    vkPostIds = vkPosts.Select(p => p.Id).ToHashSet();
-                    dbPostIds = postsDb.GetAllVkIds().ToHashSet();
+                    await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
+                    var response = await vkClient.GetCommentsAsync(post.Id, count: 5);
 
-                    var toAdd = vkPostIds.Except(dbPostIds).ToArray();
-                    logger.LogInformation("Found {Count} unposted posts", toAdd.Length);
-                    foreach (var id in toAdd)
-                    {
-                        var post = vkPosts.Single(p => p.Id == id);
+                    var audioArchives = response.Data!.Comments
+                        .Where(x => x.IsFromAuthor)
+                        .SelectMany(x => x.AudioArchives)
+                        .ToArray();
+                    post.AudioArchives.AddRange(audioArchives);
+                    if (audioArchives.Length > 0)
+                        logger.LogInformation("Added {Count} audio archives to PostId={PostId}", audioArchives.Length, post.Id);
 
-                        await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
-                        var response = await vkClient.GetCommentsAsync(post.Id, count: 5);
-
-                        var audioArchives = response.Data!.Comments
-                            .Where(x => x.IsFromAuthor)
-                            .SelectMany(x => x.AudioArchives)
-                            .ToArray();
-                        post.AudioArchives.AddRange(audioArchives);
-                        if (audioArchives.Length > 0)
-                            logger.LogInformation("Added {Count} audio archives to PostId={PostId}", audioArchives.Length, post.Id);
-
-                        await channelWriter.WriteAsync(post, stoppingToken);
-                        logger.LogInformation("Sent PostId={PostId} to posting queue", post.Id);
-                    }
+                    await channelWriter.WriteAsync(post, stoppingToken);
+                    logger.LogInformation("Sent PostId={PostId} to posting queue", post.Id);
                 }
-                finally
-                {
-                    semaphore.Release();
-                }
+            }
+            finally
+            {
+                semaphore.Release();
+            }
 
-                var toRemove = dbPostIds.Except(vkPostIds).ToArray();
-                logger.LogInformation("Found {Count} posts to remove", toRemove.Length);
-                foreach (var id in toRemove)
-                {
-                    var messagesIds = postsDb.GetByVkId(id);
-                    await postsManager.DeleteMessagesAsync(messagesIds!.ToArray());
-                    postsDb.RemoveByVkId(id);
-                }
+            // TODO: uncomment
+            var toRemove = dbPostIds.Except(vkPostIds).ToArray();
+            logger.LogInformation("Found {Count} posts to remove", toRemove.Length);
+            var toRemoveTgIds = toRemove.SelectMany(postsDb.GetByVkId!).ToArray();
+            await postsManager.DeleteMessagesAsync(toRemoveTgIds);
+            Array.ForEach(toRemove, postsDb.RemoveByVkId);
 
             logger.LogInformation("Finished feed integrity verification");
-            await Task.Delay(TimeSpan.FromDays(PeriodDays), stoppingToken);
+            await Task.Delay(TimeSpan.FromDays(PERIOD_DAYS), stoppingToken);
         }
     }
 

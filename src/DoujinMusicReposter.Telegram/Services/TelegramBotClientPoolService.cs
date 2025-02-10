@@ -4,6 +4,7 @@ using Telegram.Bot;
 namespace DoujinMusicReposter.Telegram.Services;
 
 // TODO: use queue (in vk too)
+// TODO: put down if client got some long waited retry like Telegram.Bot.Exceptions.ApiRequestException Telegram Bot API error 429: Too Many Requests: retry after 625 thrown if lower threshold in config
 public class TelegramBotClientPoolService
 {
     private readonly List<ITelegramBotClient> _botClients;
