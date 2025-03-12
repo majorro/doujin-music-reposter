@@ -296,9 +296,10 @@ public partial class TgPostBuildingService(
         {
             var partFileName = $"{fileName}.{partNumber++:D3}";
             await using var partFileStream = UploadableFile.CreateAndOpen<T>(partFileName, _localFilesDir, _botApiServerFilesDir, out var file);
-            for (long partOffset = 0; partOffset < MAX_ATTACHMENT_SIZE; partOffset += buffer.Length)
+            int read;
+            for (long partOffset = 0; partOffset < MAX_ATTACHMENT_SIZE; partOffset += read)
             {
-                var read = await stream.ReadAsync(buffer);
+                read = await stream.ReadAsync(buffer);
                 if (read == 0)
                     break;
                 await partFileStream.WriteAsync(buffer.AsMemory(0, read));
