@@ -11,7 +11,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{565E2CFA-4E25-4FA0-A328-B4C8298A2C49}"
 	ProjectSection(SolutionItems) = preProject
 		.env = .env
-		NuGet.Config = NuGet.Config
 		.gitignore = .gitignore
 	EndProjectSection
 EndProject
