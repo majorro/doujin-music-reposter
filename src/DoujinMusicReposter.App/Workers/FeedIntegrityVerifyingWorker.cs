@@ -17,7 +17,7 @@ internal class FeedIntegrityVerifyingWorker(
     PostsManagingService postsManager,
     PostsRepository postsDb) : BackgroundService
 {
-    private const int PERIOD_DAYS = 7; // TODO: to config
+    private const int PERIOD_DAYS = 3; // TODO: to config
     private static readonly int[] SkipIds = [47884]; // TODO: to config
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -41,7 +41,7 @@ internal class FeedIntegrityVerifyingWorker(
                 logger.LogInformation("Found {Count} unposted posts", toAdd.Length);
                 foreach (var id in toAdd)
                 {
-                    var post = vkPosts.First(p => p.Id == id); // not single because vk moment
+                    var post = vkPosts.Single(p => p.Id == id);
 
                     await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
                     var response = await vkClient.GetCommentsAsync(post.Id, count: 5);
@@ -63,7 +63,6 @@ internal class FeedIntegrityVerifyingWorker(
                 semaphore.Release();
             }
 
-            // TODO: uncomment
             var toRemove = dbPostIds.Except(vkPostIds).ToArray();
             logger.LogInformation("Found {Count} posts to remove", toRemove.Length);
             var toRemoveTgIds = toRemove.SelectMany(postsDb.GetByVkId!).ToArray();
@@ -77,16 +76,6 @@ internal class FeedIntegrityVerifyingWorker(
 
     private async Task<List<Post>> ReadAllPostsAsync()
     {
-        // load from file if possible TODO: remove
-        if (File.Exists("posts.json"))
-        {
-            var jsn = await File.ReadAllTextAsync("posts.json");
-            return JsonSerializer.Deserialize<List<Post>>(jsn, new JsonSerializerOptions()
-            {
-                PropertyNameCaseInsensitive = true
-            })!;
-        }
-
         int? totalPosts = null;
         var currentOffset = 0;
         var result = new List<Post>();
@@ -98,15 +87,12 @@ internal class FeedIntegrityVerifyingWorker(
             result.AddRange(response.Data!.Posts);
             totalPosts ??= response.Data!.TotalCount;
             currentOffset += response.Data!.Posts.Count;
-            if (currentOffset % 500 == 0)
+            if (currentOffset % 500 < 10)
                 logger.LogInformation("Read {Count}/{Total} posts", currentOffset, totalPosts);
         } while (currentOffset < totalPosts);
 
         result.Reverse();
 
-        // save result to file TODO: remove
-        var json = JsonSerializer.Serialize(result);
-        await File.WriteAllTextAsync("posts.json", json);
-        return result;
+        return result.DistinctBy(x => x.Id).ToList(); // vk moment
     }
 }
