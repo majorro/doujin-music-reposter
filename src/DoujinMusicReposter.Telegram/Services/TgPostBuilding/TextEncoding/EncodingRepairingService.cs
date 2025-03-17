@@ -6,7 +6,7 @@ using static DoujinMusicReposter.Telegram.Services.TgPostBuilding.TextEncoding.E
 
 namespace DoujinMusicReposter.Telegram.Services.TgPostBuilding.TextEncoding;
 
-public class EncodingRepairingService
+public class EncodingRepairingService : IEncodingRepairingService
 {
     private readonly ILogger<EncodingRepairingService> _logger;
     // sometimes unrecoverable from cp866

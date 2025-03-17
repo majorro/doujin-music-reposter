@@ -24,7 +24,7 @@ public static class HostApplicationBuilderExtensions
         var sp = builder.Services.BuildServiceProvider();
         builder.AddBotClients(sp);
 
-        builder.Services.AddSingleton<EncodingRepairingService>();
+        builder.Services.AddSingleton<IEncodingRepairingService, EncodingRepairingService>();
         builder.Services.AddSingleton<AudioTaggingService>();
 
         // TODO: do not handle 504, implement proper error handling

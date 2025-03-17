@@ -23,11 +23,12 @@ public partial class TgPostBuildingService(
     IOptions<TgConfig> appConfig,
     IOptions<VkConfig> vkConfig,
     HttpClient httpClient,
-    EncodingRepairingService encodingRepairer,
+    IEncodingRepairingService encodingRepairer,
     AudioTaggingService audioTagger) // what to post
 {
-    private const int MAX_ATTACHMENT_SIZE = int.MaxValue - 100000000; // idk
-    private const int POSSIBLY_BROKEN_ARCHIVE_SIZE_THRESHOLD = 1 * 1024 * 1024; // 1mb
+    // TODO: this is gross
+    private static int MaxAttachmentSize = int.MaxValue - 100000000; // idk
+    private const int PossiblyBrokenArchiveSizeThreshold = 1 * 1024 * 1024; // 1mb
     private static readonly HashSet<string> AudioExtensions =
     [
         ".mp3", ".wav", ".wma", ".flac", ".aac", ".alac", ".m4a", ".ape", ".wv", ".ogg", ".opus",
@@ -271,7 +272,7 @@ public partial class TgPostBuildingService(
         var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead); // TODO: ignore errors?
         if (response.StatusCode == HttpStatusCode.NotFound ||
             response.StatusCode == HttpStatusCode.GatewayTimeout ||
-            response.Content.Headers.ContentLength < POSSIBLY_BROKEN_ARCHIVE_SIZE_THRESHOLD)
+            response.Content.Headers.ContentLength < PossiblyBrokenArchiveSizeThreshold)
             return null;
         response.EnsureSuccessStatusCode();
         return new ResilientStream(await response.Content.ReadAsStreamAsync(), logger, () => AsDownloadableStreamAsync(uri));
@@ -282,7 +283,7 @@ public partial class TgPostBuildingService(
     {
         fileName = TextHelper.EnsureFilenameValidity(fileName);
 
-        if (sizeBytes <= MAX_ATTACHMENT_SIZE)
+        if (sizeBytes <= MaxAttachmentSize)
         {
             await using var fileStream = UploadableFile.CreateAndOpen<T>(fileName, _localFilesDir, _botApiServerFilesDir, out var file);
             await stream.CopyToAsync(fileStream);
@@ -292,12 +293,12 @@ public partial class TgPostBuildingService(
         var result = new List<T>();
         var partNumber = 1;
         var buffer = ArrayPool<byte>.Shared.Rent(16 * 1024 * 1024); // 16mb
-        for (long offset = 0; offset < sizeBytes; offset += MAX_ATTACHMENT_SIZE)
+        for (long offset = 0; offset < sizeBytes; offset += MaxAttachmentSize)
         {
             var partFileName = $"{fileName}.{partNumber++:D3}";
             await using var partFileStream = UploadableFile.CreateAndOpen<T>(partFileName, _localFilesDir, _botApiServerFilesDir, out var file);
             int read;
-            for (long partOffset = 0; partOffset < MAX_ATTACHMENT_SIZE; partOffset += read)
+            for (long partOffset = 0; partOffset < MaxAttachmentSize; partOffset += read)
             {
                 read = await stream.ReadAsync(buffer);
                 if (read == 0)

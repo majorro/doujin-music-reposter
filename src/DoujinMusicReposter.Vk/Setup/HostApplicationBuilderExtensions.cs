@@ -24,6 +24,7 @@ public static class HostApplicationBuilderExtensions
             {
                 var vkConfig = sp.GetRequiredService<IOptions<VkConfig>>().Value;
                 client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", vkConfig.AppTokens[0]);
+                client.Timeout = TimeSpan.FromMinutes(5); // TODO: timeouts are not retried? check it!
             })
             .AddPolicyHandler(_ => HttpPolicyExtensions
                 .HandleTransientHttpError()

@@ -5,7 +5,7 @@ namespace DoujinMusicReposter.Telegram.Services.TgPostBuilding.AudioTags;
 
 public class AudioTaggingService(
     ILogger<AudioTaggingService> logger,
-    EncodingRepairingService encodingRepairer)
+    IEncodingRepairingService encodingRepairer)
 {
     public AudioInfo ReadAndFix(Stream stream, string? fileName = null)
     {

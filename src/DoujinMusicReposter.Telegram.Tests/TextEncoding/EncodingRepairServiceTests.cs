@@ -35,6 +35,7 @@ public class EncodingRepairServiceTests
     [InlineData("introspecção")]
     [InlineData("11. Distance (Jordi K-staña Remix).mp3")]
     [InlineData("DJ'TEKINA//SOMETHING feat. YUC'e")]
+    [InlineData("Tanaken - Tình yêu đích thực")]
     public void TryFix_ShouldNotChangeString_WhenCorrect(string before)
     {
         var after = _encodingRepairer.TryFix(before);
