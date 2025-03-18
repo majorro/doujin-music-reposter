@@ -71,6 +71,7 @@ public class UpdateTrackingWorker(
         var audioArchives = response.Data!.Comments
             .Where(x => x.IsFromAuthor)
             .SelectMany(x => x.AudioArchives)
+            .Where(x => post.AudioArchives.All(y => x.FileName != y.FileName)) // for accidental duplicates
             .ToArray();
         post.AudioArchives.AddRange(audioArchives);
 
