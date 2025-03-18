@@ -31,7 +31,9 @@ internal class FeedIntegrityVerifyingWorker(
             {
                 logger.LogInformation("Started feed integrity verification");
                 var vkPosts = await ReadAllPostsAsync();
-                vkPosts = vkPosts.Where(x => !SkipIds.Contains(x.Id)).ToList();
+                vkPosts = vkPosts
+                    .Where(x => !SkipIds.Contains(x.Id) && !x.IsDonut)
+                    .ToList();
                 logger.LogInformation("Read {Count} posts", vkPosts.Count);
 
                 vkPostIds = vkPosts.Select(p => p.Id).ToHashSet();

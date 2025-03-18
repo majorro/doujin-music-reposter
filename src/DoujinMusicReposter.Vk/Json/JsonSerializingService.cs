@@ -161,7 +161,9 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
                 (prop.NameEquals("inner_type") && prop.Value.GetString() != "wall_wallpost"))
                 return null;
 
-            if (prop.NameEquals("attachments"))
+            if (prop.NameEquals("donut"))
+                result.IsDonut = prop.Value.TryGetProperty("is_donut", out var isDonut) && isDonut.GetBoolean();
+            else if (prop.NameEquals("attachments"))
             {
                 foreach (var attachment in prop.Value.EnumerateArray())
                 {

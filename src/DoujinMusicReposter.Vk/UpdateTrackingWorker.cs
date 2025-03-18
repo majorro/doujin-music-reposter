@@ -40,7 +40,11 @@ public class UpdateTrackingWorker(
             if (posts.Count == 0)
                 continue;
 
-            posts = posts.Where(x => postsDb.GetByVkId(x.Id) is not null).ToList(); // there can be multiple updates for a single post TODO: check polling
+            posts = posts
+                .Where(x =>
+                    postsDb.GetByVkId(x.Id) is not null && // there can be multiple updates for a single post TODO: check polling (it should be good but stilll)
+                    !x.IsDonut)
+                .ToList();
 
             logger.LogInformation("Got {Count} new posts", posts.Count);
 
