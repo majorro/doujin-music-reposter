@@ -22,4 +22,8 @@
         </AssemblyAttribute>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\DoujinMusicReposter.Persistence\DoujinMusicReposter.Persistence.csproj" />
+    </ItemGroup>
+
 </Project>

@@ -1,4 +1,5 @@
 ﻿using System.Threading.Channels;
+using DoujinMusicReposter.Persistence;
 using DoujinMusicReposter.Vk.Dtos;
 using DoujinMusicReposter.Vk.Http;
 using DoujinMusicReposter.Vk.Http.Dtos;
@@ -14,7 +15,8 @@ public class UpdateTrackingWorker(
     ILogger<UpdateTrackingWorker> logger,
     ChannelWriter<Post> channelWriter,
     SemaphoreSlim semaphore,
-    IVkApiClient apiClient) : BackgroundService
+    IVkApiClient apiClient,
+    PostsRepository postsDb) : BackgroundService
 {
     private LongPollingServerConfig _serverConfig = null!;
 
@@ -38,6 +40,8 @@ public class UpdateTrackingWorker(
             if (posts.Count == 0)
                 continue;
 
+            posts = posts.Where(x => postsDb.GetByVkId(x.Id) is not null).ToList(); // there can be multiple updates for a single post TODO: check polling
+
             logger.LogInformation("Got {Count} new posts", posts.Count);
 
             await semaphore.WaitAsync(ctk);
@@ -45,7 +49,7 @@ public class UpdateTrackingWorker(
             {
                 foreach (var post in posts)
                 {
-                    if (post.AudioArchives.Count < 2) // fresh archives should be valid
+                    if (post.AudioArchives.Count < 2) // older posts may have more than a single attachment
                     {
                         // TODO: sub for comment event?
                         var count = await _commentPollingPipeline.ExecuteAsync(async (p, _) => await AddArchivesFromComments(p), post, ctk);
