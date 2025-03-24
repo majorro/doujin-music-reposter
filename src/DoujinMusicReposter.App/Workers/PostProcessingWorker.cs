@@ -1,6 +1,6 @@
 using System.Diagnostics;
 using System.Threading.Channels;
-using DoujinMusicReposter.Persistence;
+using DoujinMusicReposter.Persistence.Repositories.Interfaces;
 using DoujinMusicReposter.Telegram.Services;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding.Models;
@@ -13,7 +13,7 @@ internal class PostProcessingWorker(
     ChannelReader<VkPostDto> postBuildingQueueReader,
     TgPostBuildingService postBuilder,
     PostsManagingService poster,
-    PostsRepository postsDb) : BackgroundService
+    IPostsRepository postsDb) : BackgroundService
 {
     private const int POST_PREBUILD_LIMIT = 10; // TODO: to config
 

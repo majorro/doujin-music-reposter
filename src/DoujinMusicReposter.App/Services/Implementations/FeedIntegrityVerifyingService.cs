@@ -1,6 +1,6 @@
 ﻿using System.Threading.Channels;
 using DoujinMusicReposter.App.Services.Interfaces;
-using DoujinMusicReposter.Persistence;
+using DoujinMusicReposter.Persistence.Repositories.Interfaces;
 using DoujinMusicReposter.Telegram.Services;
 using DoujinMusicReposter.Vk.Dtos;
 using DoujinMusicReposter.Vk.Http;
@@ -12,7 +12,7 @@ internal class FeedIntegrityVerifyingService(
     ChannelWriter<VkPostDto> channelWriter,
     IVkApiClient vkClient,
     PostsManagingService postsManager,
-    PostsRepository postsDb) : IFeedIntegrityVerifyingService
+    IPostsRepository postsDb) : IFeedIntegrityVerifyingService
 {
     private static readonly int[] SkipIds = [47884]; // TODO: to config
     private const int RecentPostsLimit = 100;

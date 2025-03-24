@@ -1,12 +1,13 @@
 ﻿using System.Text.Json;
+using DoujinMusicReposter.Persistence.Repositories.Interfaces;
 using DoujinMusicReposter.Persistence.Setup.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RocksDbSharp;
 
-namespace DoujinMusicReposter.Persistence;
+namespace DoujinMusicReposter.Persistence.Repositories.Implementations;
 
-public class PostsRepository : IDisposable
+public class PostsRepository : IPostsRepository
 {
     private readonly ILogger<PostsRepository> _logger;
     private readonly RocksDb _db;

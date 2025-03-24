@@ -1,5 +1,5 @@
 ﻿using System.Threading.Channels;
-using DoujinMusicReposter.Persistence;
+using DoujinMusicReposter.Persistence.Repositories.Interfaces;
 using DoujinMusicReposter.Vk.Dtos;
 using DoujinMusicReposter.Vk.Http;
 using DoujinMusicReposter.Vk.Http.Dtos;
@@ -16,7 +16,7 @@ public class UpdateTrackingWorker(
     ChannelWriter<VkPostDto> channelWriter,
     SemaphoreSlim semaphore,
     IVkApiClient apiClient,
-    PostsRepository postsDb) : BackgroundService
+    IPostsRepository postsDb) : BackgroundService
 {
     private LongPollingServerConfigDto _serverConfig = null!;
 
