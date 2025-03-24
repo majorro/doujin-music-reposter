@@ -42,7 +42,7 @@ public static class HostApplicationBuilderExtensions
 
     public static IHostApplicationBuilder AddShared(this IHostApplicationBuilder builder) // ?
     {
-        var postBuildingQueue = Channel.CreateUnbounded<Post>(new UnboundedChannelOptions
+        var postBuildingQueue = Channel.CreateUnbounded<VkPostDto>(new UnboundedChannelOptions
         {
             SingleReader = true,
             SingleWriter = true

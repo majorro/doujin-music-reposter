@@ -99,7 +99,7 @@ public class VkApiClient(
     }
 
     // errors 1,2,3 should be handled by caller
-    public async Task<VkResponse<GetNewEventsResponse>> GetNewEvents(LongPollingServerConfig config, CancellationToken ctk = default)
+    public async Task<VkResponse<GetNewEventsResponse>> GetNewEvents(LongPollingServerConfigDto config, CancellationToken ctk = default)
     {
         const string method = "";
         var queryParams = new KeyValuePair<string, string>[]

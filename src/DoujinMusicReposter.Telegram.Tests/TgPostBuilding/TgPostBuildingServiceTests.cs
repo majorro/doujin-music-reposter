@@ -87,7 +87,7 @@ public class TgPostBuildingServiceTests : IDisposable
     [Fact]
     public async Task BuildAsync_GivenPostWithMp3Archive_Check()
     {
-        var post = new Post
+        var post = new VkPostDto
         {
             Id = 228,
             Text = "Text",
@@ -115,7 +115,7 @@ public class TgPostBuildingServiceTests : IDisposable
         var fieldInfo = typeof(TgPostBuildingService).GetField("MaxAttachmentSize", BindingFlags.NonPublic | BindingFlags.Static);
         fieldInfo!.SetValue(_service, LimitedMaxAttachmentSize);
 
-        var post = new Post
+        var post = new VkPostDto
         {
             Id = 228,
             Text = "Text",

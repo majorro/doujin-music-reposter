@@ -25,9 +25,9 @@ public static class TextHelper // TODO: use it some wrapping client?
             : $"{nameWithoutExtension[..maxLength]}{extension}";
     }
 
-    public static string[] GetPreparedText(Post post, int vkGroupId)
+    public static string[] GetPreparedText(VkPostDto vkPost, int vkGroupId)
     {
-        var text = $"{post.Text}\n\n{GetVkPostLink(post, vkGroupId)}";
+        var text = $"{vkPost.Text}\n\n{GetVkPostLink(vkPost, vkGroupId)}";
         return GetTgTextParts(text);
     }
 
@@ -54,5 +54,5 @@ public static class TextHelper // TODO: use it some wrapping client?
         return result.ToArray();
     }
 
-    private static string GetVkPostLink(Post post, int vkGroupId) => $"https://vk.com/wall-{vkGroupId}_{post.Id}";
+    private static string GetVkPostLink(VkPostDto vkPost, int vkGroupId) => $"https://vk.com/wall-{vkGroupId}_{vkPost.Id}";
 }

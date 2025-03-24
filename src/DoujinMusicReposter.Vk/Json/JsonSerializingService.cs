@@ -20,7 +20,7 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
         var items = response.GetProperty("items");
 
         var totalCount = response.GetProperty("count").GetInt32();
-        var posts = new List<Post>();
+        var posts = new List<VkPostDto>();
         foreach (var post in items.EnumerateArray())
         {
             var postDto = DeserializePost(post);
@@ -47,7 +47,7 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
         var response = root.GetProperty("response");
         var items = response.GetProperty("items");
 
-        var comments = new List<Comment>();
+        var comments = new List<VkCommentDto>();
         foreach (var comment in items.EnumerateArray())
             comments.Add(DeserializeComment(comment));
 
@@ -65,7 +65,7 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
         var response = root.GetProperty("response");
 
         var props = GetProperties(response, "key", "server", "ts").Select(p => p.GetString()!).ToList();
-        var config = new LongPollingServerConfig
+        var config = new LongPollingServerConfigDto
         {
             Key = props[0],
             Server = props[1],
@@ -100,7 +100,7 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
         var updates = root.GetProperty("updates");
 
         var timestamp = root.GetProperty("ts").GetString()!;
-        var posts = new List<Post>();
+        var posts = new List<VkPostDto>();
         foreach (var update in updates.EnumerateArray())
         {
             var type = update.GetProperty("type").GetString();
@@ -128,9 +128,9 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
         return new VkResponse<T>(code, message);
     }
 
-    private static Comment DeserializeComment(JsonElement comment)
+    private static VkCommentDto DeserializeComment(JsonElement comment)
     {
-        var result = new Comment();
+        var result = new VkCommentDto();
         foreach (var prop in comment.EnumerateObject())
         {
             if (prop.NameEquals("id"))
@@ -152,9 +152,9 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
         return result;
     }
 
-    private static Post? DeserializePost(JsonElement post)
+    private static VkPostDto? DeserializePost(JsonElement post)
     {
-        var result = new Post();
+        var result = new VkPostDto();
         foreach (var prop in post.EnumerateObject())
         {
             if ((prop.NameEquals("type") && prop.Value.GetString() != "post") ||
@@ -191,7 +191,7 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
         return result;
     }
 
-    private static bool TryDeserializeAudioArchive(JsonElement attachment, out AudioArchive? audioArchive)
+    private static bool TryDeserializeAudioArchive(JsonElement attachment, out VkAudioArchiveDto? audioArchive)
     {
         audioArchive = null;
         if (!attachment.TryGetProperty("doc", out var doc))
@@ -207,7 +207,7 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
         var fileName = props[0].GetString()!;
         if (!fileName.EndsWith(ext))
             fileName = $"{fileName}.{ext}";
-        audioArchive = new AudioArchive()
+        audioArchive = new VkAudioArchiveDto()
         {
             SizeBytes = props[1].GetInt64(),
             FileName = fileName,
@@ -219,7 +219,7 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
         return true;
     }
 
-    private static bool TryDeserializeAudio(JsonElement attachment, out Audio? audio)
+    private static bool TryDeserializeAudio(JsonElement attachment, out VkAudioDto? audio)
     {
         audio = null;
         if (!attachment.TryGetProperty("audio", out var audioElement))
@@ -229,7 +229,7 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
         if (string.IsNullOrWhiteSpace(props[3].GetString())) // restricted
             return false;
 
-        audio = new Audio()
+        audio = new VkAudioDto()
         {
             Artist = props[0].GetString()!,
             Title = props[1].GetString()!,

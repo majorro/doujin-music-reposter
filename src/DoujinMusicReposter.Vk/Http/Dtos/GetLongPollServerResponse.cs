@@ -2,4 +2,4 @@
 
 namespace DoujinMusicReposter.Vk.Http.Dtos;
 
-public record GetLongPollServerResponse(LongPollingServerConfig Config) : IResponseDto;
+public record GetLongPollServerResponse(LongPollingServerConfigDto Config) : IResponseDto;

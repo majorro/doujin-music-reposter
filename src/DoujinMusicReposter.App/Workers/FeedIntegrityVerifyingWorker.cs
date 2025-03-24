@@ -11,76 +11,100 @@ namespace DoujinMusicReposter.App.Workers;
 
 internal class FeedIntegrityVerifyingWorker(
     ILogger<FeedIntegrityVerifyingWorker> logger,
-    ChannelWriter<Post> channelWriter,
+    ChannelWriter<VkPostDto> channelWriter,
     SemaphoreSlim semaphore,
     IVkApiClient vkClient,
     PostsManagingService postsManager,
     PostsRepository postsDb) : BackgroundService
 {
-    private const int PERIOD_DAYS = 3; // TODO: to config
+    private const int PeriodDays = 3; // TODO: to config + define via crontab with https://github.com/atifaziz/NCrontab/
     private static readonly int[] SkipIds = [47884]; // TODO: to config
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
+        var isFirstRun = true;
         while (!stoppingToken.IsCancellationRequested)
         {
-            HashSet<int> dbPostIds, vkPostIds;
+            int[] idsToRemove;
 
             await semaphore.WaitAsync(stoppingToken);
             try
             {
                 logger.LogInformation("Started feed integrity verification");
-                var vkPosts = await ReadAllPostsAsync();
-                vkPosts = vkPosts
-                    .Where(x => !SkipIds.Contains(x.Id) && !x.IsDonut)
-                    .ToList();
-                logger.LogInformation("Read {Count} posts", vkPosts.Count);
 
-                vkPostIds = vkPosts.Select(p => p.Id).ToHashSet();
-                dbPostIds = postsDb.GetAllVkIds().ToHashSet();
+                var vkPosts = await ReadPostsAsync(isFirstRun ? 100 : null);
 
-                var toAdd = vkPostIds.Except(dbPostIds).ToArray();
-                logger.LogInformation("Found {Count} unposted posts", toAdd.Length);
-                foreach (var id in toAdd)
-                {
-                    var post = vkPosts.Single(p => p.Id == id);
+                var dbPostIds = postsDb.GetAllVkIds().ToHashSet();
+                idsToRemove = isFirstRun
+                    ? []
+                    : dbPostIds.Except(vkPosts.Select(x => x.Id)).ToArray();
 
-                    await Task.Delay(TimeSpan.FromSeconds(1), stoppingToken);
-                    var response = await vkClient.GetCommentsAsync(post.Id, count: 5);
+                var unpostedPosts = vkPosts
+                    .Where(x =>
+                        !SkipIds.Contains(x.Id) &&
+                        !x.IsDonut &&
+                        !dbPostIds.Contains(x.Id))
+                    .ToArray();
+                logger.LogInformation("Found {Count} unposted posts", vkPosts.Length);
 
-                    var audioArchives = response.Data!.Comments
-                        .Where(x => x.IsFromAuthor)
-                        .SelectMany(x => x.AudioArchives)
-                        .ToArray();
-                    post.AudioArchives.AddRange(audioArchives);
-                    if (audioArchives.Length > 0)
-                        logger.LogInformation("Added {Count} audio archives to PostId={PostId}", audioArchives.Length, post.Id);
-
-                    await channelWriter.WriteAsync(post, stoppingToken);
-                    logger.LogInformation("Sent PostId={PostId} to posting queue", post.Id);
-                }
+                await PublishPostsAsync(unpostedPosts, stoppingToken);
             }
             finally
             {
                 semaphore.Release();
             }
 
-            var toRemove = dbPostIds.Except(vkPostIds).ToArray();
-            logger.LogInformation("Found {Count} posts to remove", toRemove.Length);
-            var toRemoveTgIds = toRemove.SelectMany(postsDb.GetByVkId!).ToArray();
-            await postsManager.DeleteMessagesAsync(toRemoveTgIds);
-            Array.ForEach(toRemove, postsDb.RemoveByVkId);
+            logger.LogInformation("Found {Count} posts to remove", idsToRemove.Length);
+            await RemovePostsAsync(idsToRemove);
 
             logger.LogInformation("Finished feed integrity verification");
-            await Task.Delay(TimeSpan.FromDays(PERIOD_DAYS), stoppingToken);
+            isFirstRun = false;
+            await Task.Delay(TimeSpan.FromDays(PeriodDays), stoppingToken);
         }
     }
 
-    private async Task<List<Post>> ReadAllPostsAsync()
+    private async Task PublishPostsAsync(IEnumerable<VkPostDto> posts, CancellationToken ctk)
     {
-        int? totalPosts = null;
+        foreach (var post in posts)
+        {
+            var response = await vkClient.GetCommentsAsync(post.Id, count: 5);
+
+            var audioArchives = response.Data!.Comments
+                .Where(x => x.IsFromAuthor)
+                .SelectMany(x => x.AudioArchives)
+                .ToArray();
+            post.AudioArchives.AddRange(audioArchives);
+            if (audioArchives.Length > 0)
+                logger.LogInformation("Added {Count} audio archives to PostId={PostId}", audioArchives.Length, post.Id);
+
+            await channelWriter.WriteAsync(post, ctk);
+            logger.LogInformation("Sent PostId={PostId} to posting queue", post.Id);
+
+            await Task.Delay(TimeSpan.FromSeconds(1), ctk);
+        }
+    }
+
+    private async Task RemovePostsAsync(IEnumerable<int> ids)
+    {
+        foreach (var id in ids)
+        {
+            var tgIds = postsDb.GetByVkId(id);
+            if (tgIds is null)
+            {
+                logger.LogWarning("Unable to remove PostId={PostId}: wasn't posted?", id);
+                continue;
+            }
+
+            await postsManager.DeleteMessagesAsync(tgIds);
+            postsDb.RemoveByVkId(id);
+        }
+    }
+
+    private async Task<VkPostDto[]> ReadPostsAsync(int? limit = null)
+    {
+        var totalPosts = limit;
         var currentOffset = 0;
-        var result = new List<Post>();
+        var result = new List<VkPostDto>();
 
         do
         {
@@ -89,12 +113,14 @@ internal class FeedIntegrityVerifyingWorker(
             result.AddRange(response.Data!.Posts);
             totalPosts ??= response.Data!.TotalCount;
             currentOffset += response.Data!.Posts.Count;
-            if (currentOffset % 500 < 10)
+            if (500 - currentOffset % 500 < 100)
                 logger.LogInformation("Read {Count}/{Total} posts", currentOffset, totalPosts);
         } while (currentOffset < totalPosts);
 
+        logger.LogInformation("Read {Count} posts", result.Count);
+
         result.Reverse();
 
-        return result.DistinctBy(x => x.Id).ToList(); // vk moment
+        return result.DistinctBy(x => x.Id).ToArray(); // vk moment
     }
 }

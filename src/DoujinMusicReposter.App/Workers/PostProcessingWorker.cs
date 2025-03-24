@@ -10,7 +10,7 @@ namespace DoujinMusicReposter.App.Workers;
 
 internal class PostProcessingWorker(
     ILogger<PostProcessingWorker> logger,
-    ChannelReader<Post> postBuildingQueueReader,
+    ChannelReader<VkPostDto> postBuildingQueueReader,
     TgPostBuildingService postBuilder,
     PostsManagingService poster,
     PostsRepository postsDb) : BackgroundService

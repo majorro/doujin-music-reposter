@@ -2,4 +2,4 @@
 
 namespace DoujinMusicReposter.Vk.Http.Dtos;
 
-public record GetNewEventsResponse(string Timestamp, List<Post> Posts) : IResponseDto;
+public record GetNewEventsResponse(string Timestamp, List<VkPostDto> Posts) : IResponseDto;

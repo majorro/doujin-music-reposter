@@ -1,6 +1,6 @@
 ﻿namespace DoujinMusicReposter.Vk.Dtos;
 
-public record Audio
+public record VkAudioDto
 {
     public Uri Link { get; internal set; } = null!;
     public string Title { get; internal set; } = null!;

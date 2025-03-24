@@ -2,4 +2,4 @@
 
 namespace DoujinMusicReposter.Vk.Http.Dtos;
 
-public record GetPostsResponse(int TotalCount, List<Post> Posts) : IResponseDto;
+public record GetPostsResponse(int TotalCount, List<VkPostDto> Posts) : IResponseDto;

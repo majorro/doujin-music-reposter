@@ -2,4 +2,4 @@
 
 namespace DoujinMusicReposter.Vk.Http.Dtos;
 
-public record GetCommentsResponse(List<Comment> Comments) : IResponseDto;
+public record GetCommentsResponse(List<VkCommentDto> Comments) : IResponseDto;

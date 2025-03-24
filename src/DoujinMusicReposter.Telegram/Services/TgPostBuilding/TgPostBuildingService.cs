@@ -52,23 +52,23 @@ public partial class TgPostBuildingService(
     [GeneratedRegex(@"Disc\s\d|CD\d", RegexOptions.IgnoreCase)]
     private static partial Regex CdFileNameRegex();
 
-    public async Task<TgPost> BuildAsync(Post post)
+    public async Task<TgPost> BuildAsync(VkPostDto vkPost)
     {
-        logger.LogInformation("Building PostId={PostId}", post.Id);
+        logger.LogInformation("Building PostId={PostId}", vkPost.Id);
         var result = new TgPost()
         {
-            TextParts = TextHelper.GetPreparedText(post, _vkGroupId), // TODO: try to replace vk links with tg links
-            Photo = post.Photo
+            TextParts = TextHelper.GetPreparedText(vkPost, _vkGroupId), // TODO: try to replace vk links with tg links
+            Photo = vkPost.Photo
         };
 
         var timer = Stopwatch.StartNew();
-        var audioArchiveFilesTasks = post.AudioArchives
+        var audioArchiveFilesTasks = vkPost.AudioArchives
             .OrderBy(x => x.SizeBytes)
             .Select(SaveAudioArchiveAsync)
             .ToArray();
         await Task.WhenAll(audioArchiveFilesTasks);
         timer.Stop();
-        logger.LogInformation("Saved audio archives for PostId={PostId} in {Elapsed}", post.Id, timer.Elapsed);
+        logger.LogInformation("Saved audio archives for PostId={PostId} in {Elapsed}", vkPost.Id, timer.Elapsed);
 
         timer.Restart();
         var audioArchiveFiles = audioArchiveFilesTasks
@@ -96,17 +96,17 @@ public partial class TgPostBuildingService(
             result.AudioFiles = result.AudioFiles.OrderBy(x => GetOrderFromFilename(x.FileName)).ToList();
 
         if (result.AudioArchives.Count > 2)
-            logger.LogWarning("Too many audio archives for PostId={PostId}", post.Id);
+            logger.LogWarning("Too many audio archives for PostId={PostId}", vkPost.Id);
 
-        if (result.AudioFiles.Count == 0 && post.Audios.Count != 0)
+        if (result.AudioFiles.Count == 0 && vkPost.Audios.Count != 0)
         {
-            var audioFileTasks = post.Audios.Select(SaveAudioAsync).ToArray();
+            var audioFileTasks = vkPost.Audios.Select(SaveAudioAsync).ToArray();
             await Task.WhenAll(audioFileTasks);
             result.AudioFiles = audioFileTasks.SelectMany(x => x.Result).ToList();
         }
         timer.Stop();
-        logger.LogInformation("Saved audios for PostId={PostId} in {Elapsed}", post.Id, timer.Elapsed);
-        logger.LogInformation("Built PostId={PostId}", post.Id);
+        logger.LogInformation("Saved audios for PostId={PostId} in {Elapsed}", vkPost.Id, timer.Elapsed);
+        logger.LogInformation("Built PostId={PostId}", vkPost.Id);
 
         return result;
     }
@@ -180,7 +180,7 @@ public partial class TgPostBuildingService(
         return extension != null && AudioExtensions.Contains(extension);
     }
 
-    private async Task<AudioArchiveFile[]> SaveAudioArchiveAsync(AudioArchive archive)
+    private async Task<AudioArchiveFile[]> SaveAudioArchiveAsync(VkAudioArchiveDto archive)
     {
         await using var stream = await AsDownloadableStreamAsync(archive.Link);
         if (stream == null)
@@ -217,7 +217,7 @@ public partial class TgPostBuildingService(
         return combinedFs;
     }
 
-    private async Task<AudioFile[]> SaveAudioAsync(Audio audio, int trackNumber)
+    private async Task<AudioFile[]> SaveAudioAsync(VkAudioDto audio, int trackNumber)
     {
         await using var stream = await AsDownloadableStreamAsync(audio.Link);
         if (stream == null)

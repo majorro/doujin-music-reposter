@@ -13,12 +13,12 @@ namespace DoujinMusicReposter.Vk;
 
 public class UpdateTrackingWorker(
     ILogger<UpdateTrackingWorker> logger,
-    ChannelWriter<Post> channelWriter,
+    ChannelWriter<VkPostDto> channelWriter,
     SemaphoreSlim semaphore,
     IVkApiClient apiClient,
     PostsRepository postsDb) : BackgroundService
 {
-    private LongPollingServerConfig _serverConfig = null!;
+    private LongPollingServerConfigDto _serverConfig = null!;
 
     private readonly ResiliencePipeline<int> _commentPollingPipeline = new ResiliencePipelineBuilder<int>()
         .AddRetry(new RetryStrategyOptions<int>
@@ -42,7 +42,7 @@ public class UpdateTrackingWorker(
 
             posts = posts
                 .Where(x =>
-                    postsDb.GetByVkId(x.Id) is not null && // there can be multiple updates for a single post TODO: check polling (it should be good but stilll)
+                    postsDb.GetByVkId(x.Id) is null && // there can be multiple updates for a single post TODO: check polling (it should be good but stilll)
                     !x.IsDonut)
                 .ToList();
 
@@ -72,16 +72,16 @@ public class UpdateTrackingWorker(
     }
 
     // TODO: same as in fiv worker, move to some helper?
-    private async Task<int> AddArchivesFromComments(Post post)
+    private async Task<int> AddArchivesFromComments(VkPostDto vkPost)
     {
-        var response = await apiClient.GetCommentsAsync(post.Id, count: 5);
+        var response = await apiClient.GetCommentsAsync(vkPost.Id, count: 5);
 
         var audioArchives = response.Data!.Comments
             .Where(x => x.IsFromAuthor)
             .SelectMany(x => x.AudioArchives)
-            .Where(x => post.AudioArchives.All(y => x.FileName != y.FileName)) // for accidental duplicates
+            .Where(x => vkPost.AudioArchives.All(y => x.FileName != y.FileName)) // for accidental duplicates
             .ToArray();
-        post.AudioArchives.AddRange(audioArchives);
+        vkPost.AudioArchives.AddRange(audioArchives);
 
         return audioArchives.Length;
     }
@@ -94,7 +94,7 @@ public class UpdateTrackingWorker(
         logger.LogInformation("Updated server config: Ts={Ts}", _serverConfig.Timestamp);
     }
 
-    private async Task<List<Post>> GetUpdatesAsync(CancellationToken ctk = default)
+    private async Task<List<VkPostDto>> GetUpdatesAsync(CancellationToken ctk = default)
     {
         var response = await apiClient.GetNewEvents(_serverConfig, ctk);
         if (response.IsSuccess)
