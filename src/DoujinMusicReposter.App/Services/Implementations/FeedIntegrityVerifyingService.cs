@@ -11,7 +11,7 @@ internal class FeedIntegrityVerifyingService(
     ILogger<FeedIntegrityVerifyingService> logger,
     ChannelWriter<VkPostDto> channelWriter,
     IVkApiClient vkClient,
-    PostsManagingService postsManager,
+    IPostsManagingService postsManager,
     IPostsRepository postsDb) : IFeedIntegrityVerifyingService
 {
     private static readonly int[] SkipIds = [47884]; // TODO: to config

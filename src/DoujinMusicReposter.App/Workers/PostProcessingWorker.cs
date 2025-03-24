@@ -12,7 +12,7 @@ internal class PostProcessingWorker(
     ILogger<PostProcessingWorker> logger,
     ChannelReader<VkPostDto> postBuildingQueueReader,
     TgPostBuildingService postBuilder,
-    PostsManagingService poster,
+    IPostsManagingService poster,
     IPostsRepository postsDb) : BackgroundService
 {
     private const int POST_PREBUILD_LIMIT = 10; // TODO: to config

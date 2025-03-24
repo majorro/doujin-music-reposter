@@ -37,7 +37,7 @@ public static class HostApplicationBuilderExtensions
             //         retryAttempt => TimeSpan.FromSeconds(Math.Min(60, Math.Pow(2, retryAttempt))),
             //         (result, i, _) => logger.LogWarning("Request {Request} failed with response: {Code}: {Error}, retry #{I}", result.Result?.RequestMessage, (int?)result.Result?.StatusCode, result.Result?.ReasonPhrase, i)));
 
-        builder.Services.AddSingleton<PostsManagingService>();
+        builder.Services.AddSingleton<IPostsManagingService, PostsManagingService>();
 
         return builder;
     }

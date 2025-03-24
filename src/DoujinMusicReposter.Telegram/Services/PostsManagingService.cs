@@ -13,7 +13,7 @@ namespace DoujinMusicReposter.Telegram.Services;
 public class PostsManagingService(
     ILogger<PostsManagingService> logger,
     IOptions<TgConfig> tgConfig,
-    TelegramBotClientPoolService botPool) // how to post
+    TelegramBotClientPoolService botPool) : IPostsManagingService
 {
     private readonly string _chatId = tgConfig.Value.ChatId;
     private readonly string _chatAdminId = tgConfig.Value.ChatAdminId;
