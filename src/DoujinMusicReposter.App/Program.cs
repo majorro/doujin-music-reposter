@@ -17,7 +17,7 @@ builder
 builder
     .AddVk()
     .AddTelegram()
-    .AddAppWorkers();
+    .AddApp();
 
 // TODO: maybe add some post trace
 // TODO: cleanup downloads directory in case of exception

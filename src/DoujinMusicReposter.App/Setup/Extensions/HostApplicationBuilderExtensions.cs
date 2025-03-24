@@ -1,4 +1,6 @@
 ﻿using System.Threading.Channels;
+using DoujinMusicReposter.App.Services.Implementations;
+using DoujinMusicReposter.App.Services.Interfaces;
 using DoujinMusicReposter.App.Setup.Configuration;
 using DoujinMusicReposter.App.Workers;
 using DoujinMusicReposter.Vk.Dtos;
@@ -56,8 +58,10 @@ public static class HostApplicationBuilderExtensions
         return builder;
     }
 
-    public static IHostApplicationBuilder AddAppWorkers(this IHostApplicationBuilder builder)
+    public static IHostApplicationBuilder AddApp(this IHostApplicationBuilder builder)
     {
+        builder.Services.AddSingleton<IFeedIntegrityVerifyingService, FeedIntegrityVerifyingService>();
+
         builder.Services.AddHostedService<PostProcessingWorker>();
         builder.Services.AddHostedService<FeedIntegrityVerifyingWorker>();
 
