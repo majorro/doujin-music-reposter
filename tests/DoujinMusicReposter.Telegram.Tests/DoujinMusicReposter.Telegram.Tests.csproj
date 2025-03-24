@@ -24,7 +24,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\DoujinMusicReposter.Telegram\DoujinMusicReposter.Telegram.csproj" />
+      <ProjectReference Include="..\..\src\DoujinMusicReposter.Telegram\DoujinMusicReposter.Telegram.csproj" />
     </ItemGroup>
 
     <ItemGroup>

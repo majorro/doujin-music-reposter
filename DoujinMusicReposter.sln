@@ -14,7 +14,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.gitignore = .gitignore
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DoujinMusicReposter.Telegram.Tests", "src\DoujinMusicReposter.Telegram.Tests\DoujinMusicReposter.Telegram.Tests.csproj", "{1B0BDAE4-0B2D-4A36-ACE3-9C4CD7EDDA85}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DoujinMusicReposter.Telegram.Tests", "tests\DoujinMusicReposter.Telegram.Tests\DoujinMusicReposter.Telegram.Tests.csproj", "{28209231-BD8F-4082-91EB-A275B5364EDA}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,9 +38,9 @@ Global
 		{CBDB8156-3513-476B-9404-6F6D5D448C04}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CBDB8156-3513-476B-9404-6F6D5D448C04}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CBDB8156-3513-476B-9404-6F6D5D448C04}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1B0BDAE4-0B2D-4A36-ACE3-9C4CD7EDDA85}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1B0BDAE4-0B2D-4A36-ACE3-9C4CD7EDDA85}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1B0BDAE4-0B2D-4A36-ACE3-9C4CD7EDDA85}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1B0BDAE4-0B2D-4A36-ACE3-9C4CD7EDDA85}.Release|Any CPU.Build.0 = Release|Any CPU
+		{28209231-BD8F-4082-91EB-A275B5364EDA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{28209231-BD8F-4082-91EB-A275B5364EDA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{28209231-BD8F-4082-91EB-A275B5364EDA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{28209231-BD8F-4082-91EB-A275B5364EDA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
