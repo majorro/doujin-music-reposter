@@ -6,6 +6,7 @@ public record VkPostDto
     public bool IsDonut { get; internal set; }
     public string Text { get; internal set; } = null!;
     public Uri? Photo { get; internal set; }
-    public List<VkAudioArchiveDto> AudioArchives { get; internal set; } = [];
+    public List<VkAudioArchiveDto> VkAudioArchives { get; internal set; } = [];
+    public List<PixelDrainAudioArchiveDto> PixelDrainAudioArchives { get; internal set; } = [];
     public List<VkAudioDto> Audios { get; internal set; } = [];
 }

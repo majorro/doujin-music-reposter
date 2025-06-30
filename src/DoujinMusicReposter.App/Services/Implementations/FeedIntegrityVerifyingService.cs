@@ -1,5 +1,6 @@
 ﻿using System.Threading.Channels;
 using DoujinMusicReposter.App.Services.Interfaces;
+using DoujinMusicReposter.App.Utils;
 using DoujinMusicReposter.Persistence.Repositories.Interfaces;
 using DoujinMusicReposter.Telegram.Services;
 using DoujinMusicReposter.Vk.Dtos;
@@ -14,7 +15,10 @@ internal class FeedIntegrityVerifyingService(
     IPostsManagingService postsManager,
     IPostsRepository postsDb) : IFeedIntegrityVerifyingService
 {
-    private static readonly int[] SkipIds = [47884]; // TODO: to config
+    private static readonly int[] SkipIds = [ // TODO: to config
+        47884, // dj things
+        72123, // no archives because vk moment (revisit this later)
+    ];
     private const int RecentPostsLimit = 100;
 
     public async Task PublishNewPostsAsync(bool onlyRecent = false, CancellationToken ctk = default)
@@ -29,9 +33,12 @@ internal class FeedIntegrityVerifyingService(
                 !x.IsDonut &&
                 !dbPostIds.Contains(x.Id))
             .ToArray();
-        logger.LogInformation("Found {Count} unposted posts", vkPosts.Length);
+        logger.LogInformation("Found {Count} unposted posts", unpostedPosts.Length);
 
-        await PublishPostsAsync(unpostedPosts, ctk);
+        var preparedPosts = await PreparePostsAsync(unpostedPosts);
+        logger.LogInformation("Prepared {Count} posts", preparedPosts.Length);
+
+        await PublishPostsAsync(preparedPosts, ctk);
 
         if (!onlyRecent)
         {
@@ -41,20 +48,35 @@ internal class FeedIntegrityVerifyingService(
         }
     }
 
+    // TODO: extract into a service and reuse in UpdateTrackingWorker
+    private async Task<VkPostDto[]> PreparePostsAsync(VkPostDto[] posts)
+    {
+        foreach (var post in posts)
+        {
+            var vkComments = await vkClient.GetCommentsAsync(post.Id, count: 5);
+            var authorComments = vkComments.Data!.Comments.Where(x => x.IsFromAuthor).ToArray();
+
+            var vkCommentsAudioArchives = authorComments.SelectMany(x => x.AudioArchives);
+            post.VkAudioArchives.AddRange(vkCommentsAudioArchives);
+
+            var postPixelDrainAudioArchives = LinkExtractor
+                .GetPixeldrainLinks(post.Text)
+                .Select(x => new PixelDrainAudioArchiveDto(new Uri(x)));
+            post.PixelDrainAudioArchives.AddRange(postPixelDrainAudioArchives);
+
+            var commentsPixelDrainAudioArchives = authorComments
+                .SelectMany(x => LinkExtractor.GetPixeldrainLinks(x.Text ?? ""))
+                .Select(x => new PixelDrainAudioArchiveDto(new Uri(x)));
+            post.PixelDrainAudioArchives.AddRange(commentsPixelDrainAudioArchives);
+        }
+
+        return posts;
+    }
+
     private async Task PublishPostsAsync(IEnumerable<VkPostDto> posts, CancellationToken ctk)
     {
         foreach (var post in posts)
         {
-            var response = await vkClient.GetCommentsAsync(post.Id, count: 5);
-
-            var audioArchives = response.Data!.Comments
-                .Where(x => x.IsFromAuthor)
-                .SelectMany(x => x.AudioArchives)
-                .ToArray();
-            post.AudioArchives.AddRange(audioArchives);
-            if (audioArchives.Length > 0)
-                logger.LogInformation("Added {Count} audio archives to PostId={PostId}", audioArchives.Length, post.Id);
-
             await channelWriter.WriteAsync(post, ctk);
             logger.LogInformation("Sent PostId={PostId} to posting queue", post.Id);
 

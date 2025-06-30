@@ -53,7 +53,7 @@ public class UpdateTrackingWorker(
             {
                 foreach (var post in posts)
                 {
-                    if (post.AudioArchives.Count < 2) // older posts may have more than a single attachment
+                    if (post.VkAudioArchives.Count < 2) // older posts may have more than a single attachment
                     {
                         // TODO: sub for comment event?
                         var count = await _commentPollingPipeline.ExecuteAsync(async (p, _) => await AddArchivesFromComments(p), post, ctk);
@@ -79,9 +79,9 @@ public class UpdateTrackingWorker(
         var audioArchives = response.Data!.Comments
             .Where(x => x.IsFromAuthor)
             .SelectMany(x => x.AudioArchives)
-            .Where(x => vkPost.AudioArchives.All(y => x.FileName != y.FileName)) // for accidental duplicates
+            .Where(x => vkPost.VkAudioArchives.All(y => x.FileName != y.FileName)) // for accidental duplicates
             .ToArray();
-        vkPost.AudioArchives.AddRange(audioArchives);
+        vkPost.VkAudioArchives.AddRange(audioArchives);
 
         return audioArchives.Length;
     }

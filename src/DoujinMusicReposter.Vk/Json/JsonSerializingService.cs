@@ -170,7 +170,7 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
                     if (attachment.TryGetProperty("photo", out var photo))
                         result.Photo = new Uri(photo.GetProperty("orig_photo").GetProperty("url").GetString()!);
                     else if (TryDeserializeAudioArchive(attachment, out var audioArchive))
-                        result.AudioArchives.Add(audioArchive!);
+                        result.VkAudioArchives.Add(audioArchive!);
                     else if (TryDeserializeAudio(attachment, out var audio))
                         result.Audios.Add(audio!);
                 }
@@ -185,7 +185,7 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
         }
 
         if (string.IsNullOrEmpty(result.Text) && result.Photo is null &&
-            result.AudioArchives.Count == 0 && result.Audios.Count == 0) // TODO: return something else? for logging purposes
+            result.VkAudioArchives.Count == 0 && result.Audios.Count == 0) // TODO: return something else? for logging purposes
             return null; // repost
 
         return result;

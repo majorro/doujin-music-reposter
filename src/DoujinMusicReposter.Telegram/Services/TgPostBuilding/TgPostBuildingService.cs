@@ -62,7 +62,7 @@ public partial class TgPostBuildingService(
         };
 
         var timer = Stopwatch.StartNew();
-        var audioArchiveFilesTasks = vkPost.AudioArchives
+        var audioArchiveFilesTasks = vkPost.VkAudioArchives
             .OrderBy(x => x.SizeBytes)
             .Select(SaveAudioArchiveAsync)
             .ToArray();
