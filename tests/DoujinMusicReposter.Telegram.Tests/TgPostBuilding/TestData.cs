@@ -8,12 +8,15 @@ public static class TestData
     public const int AudioInArchiveCount = 2;
     public const int Mp3AudioIndexInArchive = 1;
 
-    public static VkAudioArchiveDto Mp3Archive => new()
+    public static VkAudioArchiveDto VkMp3Archive => new()
     {
         Link = new Uri(Path.Combine(DataPath, "Mp3AudioArchive.zip")),
         SizeBytes = 24_919_639,
         FileName = "Mp3AudioArchive.zip",
     };
+
+    public static PixelDrainAudioArchiveDto PixelDrainMp3Archive =>
+        new(new Uri(Path.Combine(DataPath, "Mp3AudioArchive.zip")));
 
     public static VkAudioDto Mp3Audio => new()
     {

@@ -19,7 +19,7 @@ namespace DoujinMusicReposter.Telegram.Tests.TgPostBuilding;
 
 public class TgPostBuildingServiceTests : IDisposable
 {
-    private static readonly int LimitedMaxAttachmentSize = (int)(TestData.Mp3Archive.SizeBytes - TestData.Mp3Archive.SizeBytes / 4);
+    private static readonly int LimitedMaxAttachmentSize = (int)(TestData.VkMp3Archive.SizeBytes - TestData.VkMp3Archive.SizeBytes / 4);
 
     private readonly string _tempPath;
     private readonly Mock<IOptions<TgConfig>> _appConfigMock;
@@ -91,7 +91,7 @@ public class TgPostBuildingServiceTests : IDisposable
         {
             Id = 228,
             Text = "Text",
-            AudioArchives = [TestData.Mp3Archive],
+            VkAudioArchives = [TestData.VkMp3Archive],
         };
 
         using var result = await _service.BuildAsync(post);
@@ -105,8 +105,33 @@ public class TgPostBuildingServiceTests : IDisposable
         result.AudioFiles[TestData.Mp3AudioIndexInArchive].DurationSeconds.Should().Be(TestData.Mp3Audio.DurationSeconds);
 
         var extractedMp3ArchivePath = ExtractArchive(result.AudioArchives[0].LocalFullName);
-        var expectedExtractedPath = Path.Combine(TestData.DataPath, TestData.Mp3Archive.FileName.Replace(".zip", "Extracted"));
+        var expectedExtractedPath = Path.Combine(TestData.DataPath, TestData.VkMp3Archive.FileName.Replace(".zip", "Extracted"));
         AssertDirectoriesEquivalence(expectedExtractedPath, extractedMp3ArchivePath);
+    }
+
+    [Fact]
+    public async Task BuildAsync_GivenPostWithVkAndPixeldrainMp3Archives_ShouldPrepareBoth()
+    {
+        var post = new VkPostDto
+        {
+            Id = 228,
+            Text = "Text",
+            VkAudioArchives = [TestData.VkMp3Archive],
+            PixelDrainAudioArchives = [TestData.PixelDrainMp3Archive]
+        };
+
+        using var result = await _service.BuildAsync(post);
+
+        result.TextParts[0].Should().StartWith("Text");
+        result.Photo.Should().BeNull();
+        result.AudioArchives.Should().HaveCount(2);
+        result.AudioFiles.Should().HaveCount(TestData.AudioInArchiveCount * 2);
+        result.AudioFiles[TestData.Mp3AudioIndexInArchive].Title.Should().Be(TestData.Mp3Audio.Title);
+        result.AudioFiles[TestData.Mp3AudioIndexInArchive].Artist.Should().Be(TestData.Mp3Audio.Artist);
+        result.AudioFiles[TestData.Mp3AudioIndexInArchive].DurationSeconds.Should().Be(TestData.Mp3Audio.DurationSeconds);
+        result.AudioFiles[TestData.Mp3AudioIndexInArchive + TestData.AudioInArchiveCount].Title.Should().Be(TestData.Mp3Audio.Title);
+        result.AudioFiles[TestData.Mp3AudioIndexInArchive + TestData.AudioInArchiveCount].Artist.Should().Be(TestData.Mp3Audio.Artist);
+        result.AudioFiles[TestData.Mp3AudioIndexInArchive + TestData.AudioInArchiveCount].DurationSeconds.Should().Be(TestData.Mp3Audio.DurationSeconds);
     }
 
     [Fact]
@@ -119,7 +144,7 @@ public class TgPostBuildingServiceTests : IDisposable
         {
             Id = 228,
             Text = "Text",
-            AudioArchives = [TestData.Mp3Archive],
+            VkAudioArchives = [TestData.VkMp3Archive],
         };
 
         using var result = await _service.BuildAsync(post);
@@ -134,7 +159,7 @@ public class TgPostBuildingServiceTests : IDisposable
 
         var mergedMp3ArchivePath = MergeAndSaveArchive(result.AudioArchives);
         var extractedMp3ArchivePath = ExtractArchive(mergedMp3ArchivePath);
-        var expectedExtractedPath = Path.Combine(TestData.DataPath, TestData.Mp3Archive.FileName.Replace(".zip", "Extracted"));
+        var expectedExtractedPath = Path.Combine(TestData.DataPath, TestData.VkMp3Archive.FileName.Replace(".zip", "Extracted"));
         AssertDirectoriesEquivalence(expectedExtractedPath, extractedMp3ArchivePath);
     }
 
