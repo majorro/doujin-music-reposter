@@ -1,10 +1,10 @@
 ﻿using System.Threading.Channels;
 using DoujinMusicReposter.App.Services.Interfaces;
-using DoujinMusicReposter.App.Utils;
 using DoujinMusicReposter.Persistence.Repositories.Interfaces;
 using DoujinMusicReposter.Telegram.Services;
 using DoujinMusicReposter.Vk.Dtos;
 using DoujinMusicReposter.Vk.Http;
+using DoujinMusicReposter.Vk.Utils;
 
 namespace DoujinMusicReposter.App.Services.Implementations;
 

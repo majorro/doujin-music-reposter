@@ -4,6 +4,7 @@ using DoujinMusicReposter.Vk.Dtos;
 using DoujinMusicReposter.Vk.Http;
 using DoujinMusicReposter.Vk.Http.Dtos;
 using DoujinMusicReposter.Vk.Http.Exceptions;
+using DoujinMusicReposter.Vk.Utils;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Polly;
@@ -15,7 +16,7 @@ public class UpdateTrackingWorker(
     ILogger<UpdateTrackingWorker> logger,
     ChannelWriter<VkPostDto> channelWriter,
     SemaphoreSlim semaphore,
-    IVkApiClient apiClient,
+    IVkApiClient vkClient,
     IPostsRepository postsDb) : BackgroundService
 {
     private LongPollingServerConfigDto _serverConfig = null!;
@@ -56,7 +57,7 @@ public class UpdateTrackingWorker(
                     if (post.VkAudioArchives.Count < 2) // older posts may have more than a single attachment
                     {
                         // TODO: sub for comment event?
-                        var count = await _commentPollingPipeline.ExecuteAsync(async (p, _) => await AddArchivesFromComments(p), post, ctk);
+                        var count = await _commentPollingPipeline.ExecuteAsync(async (p, _) => await PreparePostAsync(p), post, ctk);
                         logger.LogInformation("Added {Count} audio archives to PostId={PostId}", count, post.Id);
                     }
 
@@ -72,23 +73,32 @@ public class UpdateTrackingWorker(
     }
 
     // TODO: same as in fiv worker, move to some helper?
-    private async Task<int> AddArchivesFromComments(VkPostDto vkPost)
+    private async Task<int> PreparePostAsync(VkPostDto post)
     {
-        var response = await apiClient.GetCommentsAsync(vkPost.Id, count: 5);
+        var vkComments = await vkClient.GetCommentsAsync(post.Id, count: 5);
+        var authorComments = vkComments.Data!.Comments.Where(x => x.IsFromAuthor).ToArray();
 
-        var audioArchives = response.Data!.Comments
-            .Where(x => x.IsFromAuthor)
+        var vkCommentsAudioArchives = authorComments
             .SelectMany(x => x.AudioArchives)
-            .Where(x => vkPost.VkAudioArchives.All(y => x.FileName != y.FileName)) // for accidental duplicates
             .ToArray();
-        vkPost.VkAudioArchives.AddRange(audioArchives);
+        post.VkAudioArchives.AddRange(vkCommentsAudioArchives);
 
-        return audioArchives.Length;
+        var postPixelDrainAudioArchives = LinkExtractor
+            .GetPixeldrainLinks(post.Text)
+            .Select(x => new PixelDrainAudioArchiveDto(new Uri(x)));
+        post.PixelDrainAudioArchives.AddRange(postPixelDrainAudioArchives);
+
+        var commentsPixelDrainAudioArchives = authorComments
+            .SelectMany(x => LinkExtractor.GetPixeldrainLinks(x.Text ?? ""))
+            .Select(x => new PixelDrainAudioArchiveDto(new Uri(x)));
+        post.PixelDrainAudioArchives.AddRange(commentsPixelDrainAudioArchives);
+
+        return vkCommentsAudioArchives.Length;
     }
 
     private async Task UpdateServerConfigAsync()
     {
-        var response = await apiClient.GetLongPollServerAsync();
+        var response = await vkClient.GetLongPollServerAsync();
 
         _serverConfig = response.Data!.Config;
         logger.LogInformation("Updated server config: Ts={Ts}", _serverConfig.Timestamp);
@@ -96,7 +106,7 @@ public class UpdateTrackingWorker(
 
     private async Task<List<VkPostDto>> GetUpdatesAsync(CancellationToken ctk = default)
     {
-        var response = await apiClient.GetNewEvents(_serverConfig, ctk);
+        var response = await vkClient.GetNewEvents(_serverConfig, ctk);
         if (response.IsSuccess)
         {
             _serverConfig.Timestamp = response.Data!.Timestamp;

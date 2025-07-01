@@ -1,8 +1,8 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace DoujinMusicReposter.App.Utils;
+namespace DoujinMusicReposter.Vk.Utils;
 
-internal static partial class LinkExtractor
+public static partial class LinkExtractor
 {
     [GeneratedRegex(@"https://pixeldrain\.com/u/[a-zA-Z0-9]{8}", RegexOptions.Compiled)]
     private static partial Regex PixeldrainLinkRegex();
