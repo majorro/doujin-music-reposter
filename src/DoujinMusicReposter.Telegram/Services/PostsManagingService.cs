@@ -135,7 +135,7 @@ public class PostsManagingService(
             var sb = new StringBuilder("Delete these:\n");
             foreach (var id in messagesIds)
                 sb.Append($"https://t.me/{_chatId.TrimStart('@')}/{id}\n");
-            var textParts = TextHelper.GetTgTextParts(sb.ToString()); // smart move lmao
+            var textParts = TextHelper.GetTgTextParts(sb.ToString(), false); // smart move lmao
             foreach (var textPart in textParts)
                 await botClient.SendMessage(_chatAdminId, textPart);
 

@@ -79,17 +79,9 @@ public partial class TgPostBuildingService(
             if (result.AudioFiles.Count == 0 || CdFileNameRegex().IsMatch(archiveFiles[0].FileName))
             {
                 var audioFiles = await SaveAudioFilesAsync(archiveFiles);
-                if (audioFiles.Count == 0)
-                {
-                    foreach (var audioArchive in archiveFiles)
-                        audioArchive.Dispose();
-                    continue;
-                }
-
                 result.AudioFiles.AddRange(audioFiles);
             }
 
-            // TODO: check archive for validity
             result.AudioArchives.AddRange(archiveFiles);
         }
         if (result.AudioFiles.All(x => char.IsDigit(x.FileName[0]) && (x.FileName[1] == '_' || x.FileName[2] == '_')))
@@ -165,7 +157,7 @@ public partial class TgPostBuildingService(
         }
         catch (Exception e) when (e is
                                       InvalidFormatException or // broken archive/bug https://github.com/adamhathcock/sharpcompress/issues/890
-                                      EndOfStreamException) // like this https://vk.com/wall-60027733_20309
+                                      EndOfStreamException) // like this https://vk.ru/wall-60027733_20309
         {
             logger.LogWarning(e, "Failed to read archive: {FileName} ({Link})", archive.FileName, archive.Link);
             return [];

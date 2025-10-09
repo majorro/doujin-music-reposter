@@ -98,4 +98,4 @@ public class EncodingRepairServiceTests
 // 12.е¦ененещед -еъете¦е-- - .mp3 // 12.スキキライ -リモコゲ- // probably to gb
 // 03 +№д+еLй`епе¦едег & -vT-д+е¬езеще¬й` & ¦гды--д+=--~дид¬ШЄ].mp3 // 紅茜 [厄神様の通り道　~ Dark Road & 運命のダークサイド & 緑眼のジェラシー & 渡る者の途絶えた橋] // probably to gb
 // 08. П+ВжВLВвЧ~(Instrumental).mp3 // 消えない欲(Instrumental) // unsupported MIK encoding or something
-// 06 ВоВшБиВёВаВвВ¦ВрВёВ¬В-ВЯЦ¦.mp3 // ぐり→んあいどもんすたぁ娘 // broken cp866->sjis https://vk.com/wall-60027733_1218
+// 06 ВоВшБиВёВаВвВ¦ВрВёВ¬В-ВЯЦ¦.mp3 // ぐり→んあいどもんすたぁ娘 // broken cp866->sjis https://vk.ru/wall-60027733_1218

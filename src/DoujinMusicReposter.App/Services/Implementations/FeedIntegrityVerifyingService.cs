@@ -17,7 +17,6 @@ internal class FeedIntegrityVerifyingService(
 {
     private static readonly int[] SkipIds = [ // TODO: to config
         47884, // dj things
-        72123, // no archives because vk moment (revisit this later)
     ];
     private const int RecentPostsLimit = 100;
 

@@ -4,9 +4,9 @@ namespace DoujinMusicReposter.Telegram.Utils;
 
 public static class TextHelper // TODO: use it some wrapping client?
 {
-    private const int MAX_PHOTO_CAPTION_LENGTH = 1024;
-    private const int MAX_TEXT_MESSAGE_LENGTH = 4096;
-    private const int MAX_FILENAME_LENGTH = 157 - 40 - 7; // approx 40-47 full path
+    private const int MaxPhotoCaptionLength = 1024;
+    private const int MaxTextMessageLength = 4096;
+    private const int MaxFilenameLength = 157 - 40 - 7; // approx 40-47 full path
     private static readonly char[] ForbiddenFileNameChars = ['\u0005', '\u0000', '\u001F', '\u007F', '\u2400', '\\', '/', ':', '*', '?', '"', '<', '>', '|', '\t', '\n', '\r', '\v'];
 
     public static string EnsureFilenameValidity(string text)
@@ -19,7 +19,7 @@ public static class TextHelper // TODO: use it some wrapping client?
 
         var nameWithoutExtension  = Path.GetFileNameWithoutExtension(text);
         var extension = Path.GetExtension(text);
-        var maxLength = MAX_FILENAME_LENGTH - extension.Length;
+        var maxLength = MaxFilenameLength - extension.Length;
         return nameWithoutExtension.Length <= maxLength
             ? text
             : $"{nameWithoutExtension[..maxLength]}{extension}";
@@ -28,10 +28,10 @@ public static class TextHelper // TODO: use it some wrapping client?
     public static string[] GetPreparedText(VkPostDto vkPost, int vkGroupId)
     {
         var text = $"{vkPost.Text}\n\n{GetVkPostLink(vkPost, vkGroupId)}";
-        return GetTgTextParts(text);
+        return GetTgTextParts(text, vkPost.Photo is not null);
     }
 
-    public static string[] GetTgTextParts(string text)
+    public static string[] GetTgTextParts(string text, bool hasPhoto)
     {
         var result = new List<string>();
         var curLength = 0;
@@ -40,7 +40,9 @@ public static class TextHelper // TODO: use it some wrapping client?
         {
             if (text[i] == '\n')
             {
-                var maxLength = result.Count == 0 ? MAX_PHOTO_CAPTION_LENGTH : MAX_TEXT_MESSAGE_LENGTH; // first msg is probably with photo
+                var maxLength = result.Count == 0 && hasPhoto
+                    ? MaxPhotoCaptionLength
+                    : MaxTextMessageLength;
                 if (curLength + i - curStart > maxLength)
                 {
                     result.Add(text.Substring(curStart, i - curStart));
@@ -51,8 +53,8 @@ public static class TextHelper // TODO: use it some wrapping client?
             curLength++;
         }
         result.Add(text[curStart..]);
-        return result.ToArray();
+        return result.Where(x => !string.IsNullOrWhiteSpace(x)).ToArray();
     }
 
-    private static string GetVkPostLink(VkPostDto vkPost, int vkGroupId) => $"https://vk.com/wall-{vkGroupId}_{vkPost.Id}";
+    private static string GetVkPostLink(VkPostDto vkPost, int vkGroupId) => $"https://vk.ru/wall-{vkGroupId}_{vkPost.Id}";
 }
