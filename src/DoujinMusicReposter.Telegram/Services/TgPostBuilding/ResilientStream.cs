@@ -1,46 +1,64 @@
 ﻿using Microsoft.Extensions.Logging;
+using Polly;
+using Polly.Retry;
 
 namespace DoujinMusicReposter.Telegram.Services.TgPostBuilding;
 
-// TODO: use polly if a single retry not enough
-public class ResilientStream(Stream stream, ILogger logger, Func<Task<Stream?>> newStreamFunc) : Stream
+public class ResilientStream : Stream
 {
-    private Stream _stream = stream;
+    private Stream _stream;
+    private readonly AsyncRetryPolicy _retryPolicy;
+
+    public ResilientStream(Stream stream, ILogger logger, Func<Task<Stream?>> newStreamFunc)
+    {
+        _stream = stream;
+
+        _retryPolicy = Policy
+            .Handle<IOException>(ex => ex.Message.Contains("The response ended prematurely"))
+            .WaitAndRetryAsync(
+                retryCount: int.MaxValue,
+                sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
+                onRetryAsync: async (exception, delay, retryCount, _) =>
+                {
+                    logger.LogWarning(exception, "Failed to read from stream (attempt {RetryCount}), retrying in {Delay}ms", retryCount, delay.TotalMilliseconds);
+                    _stream = await newStreamFunc() ?? throw new InvalidOperationException("Failed to create new stream");
+                });
+    }
 
     public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken ctk)
     {
-        try
+        await _retryPolicy.ExecuteAsync(async token =>
         {
-            await _stream.CopyToAsync(destination, bufferSize, ctk);
-        }
-        catch (IOException e) when (e.Message.Contains("The response ended prematurely"))
-        {
-            logger.LogWarning(e, "Failed to read from stream, creating new");
-            await _stream.DisposeAsync();
-            await Task.Delay(5000, ctk); // TODO: determine delay
-            _stream = (await newStreamFunc())!;
-            destination.SetLength(0);
-            await _stream.CopyToAsync(destination, bufferSize, ctk);
-        }
+            try
+            {
+                await _stream.CopyToAsync(destination, bufferSize, token);
+            }
+            catch (IOException)
+            {
+                await _stream.DisposeAsync();
+                destination.SetLength(0);
+                throw;
+            }
+        }, ctk);
     }
 
-    public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ctk)
+    public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ctk = default)
     {
-        try
+        return await _retryPolicy.ExecuteAsync(async token =>
         {
-            return await _stream.ReadAsync(buffer, ctk);
-        }
-        catch (IOException e) when (e.Message.Contains("The response ended prematurely"))
-        {
-            logger.LogWarning(e, "Failed to read from stream, creating new");
-            await _stream.DisposeAsync();
-            await Task.Delay(5000, ctk); // TODO: determine delay
-            _stream = (await newStreamFunc())!;
-            return await _stream.ReadAsync(buffer, ctk);
-        }
+            try
+            {
+                return await _stream.ReadAsync(buffer, token);
+            }
+            catch (IOException)
+            {
+                await _stream.DisposeAsync();
+                throw;
+            }
+        }, ctk);
     }
 
-    #region Disposing
+    #region Disposal
 
     protected override void Dispose(bool disposing)
     {
