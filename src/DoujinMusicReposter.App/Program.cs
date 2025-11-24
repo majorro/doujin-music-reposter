@@ -1,4 +1,4 @@
-using DoujinMusicReposter.App.Setup.Extensions;
+using DoujinMusicReposter.App.Setup;
 using DoujinMusicReposter.Persistence.Setup;
 using DoujinMusicReposter.Telegram.Setup;
 using DoujinMusicReposter.Vk.Setup;

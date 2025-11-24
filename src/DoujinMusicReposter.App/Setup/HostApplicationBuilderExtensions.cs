@@ -1,5 +1,5 @@
 ﻿using System.Threading.Channels;
-using DoujinMusicReposter.App.Services.Implementations;
+using DoujinMusicReposter.App.Services;
 using DoujinMusicReposter.App.Services.Interfaces;
 using DoujinMusicReposter.App.Setup.Configuration;
 using DoujinMusicReposter.App.Workers;
@@ -9,7 +9,7 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using Serilog.Events;
 
-namespace DoujinMusicReposter.App.Setup.Extensions;
+namespace DoujinMusicReposter.App.Setup;
 
 public static class HostApplicationBuilderExtensions
 {

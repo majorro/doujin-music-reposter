@@ -6,7 +6,7 @@ using DoujinMusicReposter.Vk.Dtos;
 using DoujinMusicReposter.Vk.Http;
 using DoujinMusicReposter.Vk.Utils;
 
-namespace DoujinMusicReposter.App.Services.Implementations;
+namespace DoujinMusicReposter.App.Services;
 
 internal class FeedIntegrityVerifyingService(
     ILogger<FeedIntegrityVerifyingService> logger,
@@ -107,7 +107,7 @@ internal class FeedIntegrityVerifyingService(
 
         do
         {
-            var response = await vkClient.GetPostsAsync(currentOffset);
+            var response = await vkClient.GetPostsAsync(currentOffset); // TODO: math.min
 
             result.AddRange(response.Data!.Posts);
             totalPosts ??= response.Data!.TotalCount;
