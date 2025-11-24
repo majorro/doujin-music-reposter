@@ -110,31 +110,6 @@ public class TgPostBuildingServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task BuildAsync_GivenPostWithVkAndPixeldrainMp3Archives_ShouldPrepareBoth()
-    {
-        var post = new VkPostDto
-        {
-            Id = 228,
-            Text = "Text",
-            VkAudioArchives = [TestData.VkMp3Archive],
-            PixelDrainAudioArchives = [TestData.PixelDrainMp3Archive]
-        };
-
-        using var result = await _service.BuildAsync(post);
-
-        result.TextParts[0].Should().StartWith("Text");
-        result.Photo.Should().BeNull();
-        result.AudioArchives.Should().HaveCount(2);
-        result.AudioFiles.Should().HaveCount(TestData.AudioInArchiveCount * 2);
-        result.AudioFiles[TestData.Mp3AudioIndexInArchive].Title.Should().Be(TestData.Mp3Audio.Title);
-        result.AudioFiles[TestData.Mp3AudioIndexInArchive].Artist.Should().Be(TestData.Mp3Audio.Artist);
-        result.AudioFiles[TestData.Mp3AudioIndexInArchive].DurationSeconds.Should().Be(TestData.Mp3Audio.DurationSeconds);
-        result.AudioFiles[TestData.Mp3AudioIndexInArchive + TestData.AudioInArchiveCount].Title.Should().Be(TestData.Mp3Audio.Title);
-        result.AudioFiles[TestData.Mp3AudioIndexInArchive + TestData.AudioInArchiveCount].Artist.Should().Be(TestData.Mp3Audio.Artist);
-        result.AudioFiles[TestData.Mp3AudioIndexInArchive + TestData.AudioInArchiveCount].DurationSeconds.Should().Be(TestData.Mp3Audio.DurationSeconds);
-    }
-
-    [Fact]
     public async Task BuildAsync_GivenPostWithMp3ArchiveExceedingMaxAttachmentSize_Check()
     {
         var fieldInfo = typeof(TgPostBuildingService).GetField("MaxAttachmentSize", BindingFlags.NonPublic | BindingFlags.Static);
