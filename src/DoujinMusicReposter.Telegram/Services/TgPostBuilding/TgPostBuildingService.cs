@@ -57,7 +57,7 @@ public partial class TgPostBuildingService(
         logger.LogInformation("Building PostId={PostId}", vkPost.Id);
         var result = new TgPost()
         {
-            TextParts = TextHelper.GetPreparedText(vkPost, _vkGroupId), // TODO: try to replace vk links with tg links
+            TextParts = TextHelper.GetPreparedText(vkPost, _vkGroupId),
             Photo = vkPost.Photo
         };
 

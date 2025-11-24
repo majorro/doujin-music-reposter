@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using DoujinMusicReposter.Telegram.Services;
+using DoujinMusicReposter.Telegram.Services.Interfaces;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding.AudioTags;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding.TextEncoding;

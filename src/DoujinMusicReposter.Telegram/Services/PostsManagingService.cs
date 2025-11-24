@@ -1,4 +1,5 @@
 ﻿using System.Text;
+using DoujinMusicReposter.Telegram.Services.Interfaces;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding.Models;
 using DoujinMusicReposter.Telegram.Setup.Configuration;
 using DoujinMusicReposter.Telegram.Utils;

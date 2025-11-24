@@ -1,6 +1,6 @@
 ﻿using DoujinMusicReposter.Telegram.Services.TgPostBuilding.Models;
 
-namespace DoujinMusicReposter.Telegram.Services;
+namespace DoujinMusicReposter.Telegram.Services.Interfaces;
 
 public interface IPostsManagingService
 {

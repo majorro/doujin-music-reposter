@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Threading.Channels;
 using DoujinMusicReposter.Persistence.Repositories.Interfaces;
-using DoujinMusicReposter.Telegram.Services;
+using DoujinMusicReposter.Telegram.Services.Interfaces;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding.Models;
 using DoujinMusicReposter.Vk.Dtos;
