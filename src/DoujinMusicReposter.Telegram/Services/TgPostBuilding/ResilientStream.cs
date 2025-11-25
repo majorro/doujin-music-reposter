@@ -20,7 +20,7 @@ public class ResilientStream : Stream
                 sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
                 onRetryAsync: async (exception, delay, retryCount, _) =>
                 {
-                    logger.LogWarning(exception, "Failed to read from stream (attempt {RetryCount}), retrying in {Delay}ms", retryCount, delay.TotalMilliseconds);
+                    logger.LogWarning(exception, "Failed to read from stream (attempt {RetryCount}), retrying in {Delay}s", retryCount, delay.TotalSeconds);
                     _stream = await newStreamFunc() ?? throw new InvalidOperationException("Failed to create new stream");
                 });
     }

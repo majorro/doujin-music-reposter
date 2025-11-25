@@ -258,16 +258,22 @@ public partial class TgPostBuildingService(
         return audioFileParts;
     }
 
-    private async Task<Stream?> AsDownloadableStreamAsync(Uri uri) // TODO: move to resilient stream method?
+    private async Task<Stream?> AsDownloadableStreamAsync(Uri uri)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, uri);
-        var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead); // TODO: ignore errors?
-        if (response.StatusCode == HttpStatusCode.NotFound ||
-            response.StatusCode == HttpStatusCode.GatewayTimeout ||
-            response.Content.Headers.ContentLength < PossiblyBrokenArchiveSizeThreshold)
-            return null;
-        response.EnsureSuccessStatusCode();
-        return new ResilientStream(await response.Content.ReadAsStreamAsync(), logger, () => AsDownloadableStreamAsync(uri));
+        var stream = await GetStreamAsync();
+        return stream == null ? null : new ResilientStream(stream, logger, GetStreamAsync);
+
+        async Task<Stream?> GetStreamAsync()
+        {
+            var request = new HttpRequestMessage(HttpMethod.Get, uri);
+            var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead); // TODO: ignore errors?
+            if (response.StatusCode == HttpStatusCode.NotFound ||
+                response.StatusCode == HttpStatusCode.GatewayTimeout ||
+                response.Content.Headers.ContentLength < PossiblyBrokenArchiveSizeThreshold)
+                return null;
+            response.EnsureSuccessStatusCode();
+            return await response.Content.ReadAsStreamAsync();
+        }
     }
 
     private async Task<T[]> SaveFromStreamAsync<T>(Stream stream, string fileName, long sizeBytes)
