@@ -14,7 +14,7 @@ public class ResilientStream : Stream
         _stream = stream;
 
         _retryPolicy = Policy
-            .Handle<IOException>(ex => ex.Message.Contains("The response ended prematurely"))
+            .Handle<IOException>()
             .WaitAndRetryAsync(
                 retryCount: int.MaxValue,
                 sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
