@@ -62,18 +62,17 @@ public partial class TgPostBuildingService(
         };
 
         var timer = Stopwatch.StartNew();
-        var audioArchiveFilesTasks = vkPost.VkAudioArchives
-            .OrderBy(x => x.SizeBytes)
-            .Select(SaveAudioArchiveAsync)
-            .ToArray();
-        await Task.WhenAll(audioArchiveFilesTasks);
+        var audioArchiveFiles = new List<AudioArchiveFile[]>();
+        foreach (var archive in vkPost.VkAudioArchives.OrderBy(x => x.SizeBytes))
+        {
+            var res = await SaveAudioArchiveAsync(archive);
+            if(res.Length != 0)
+                audioArchiveFiles.Add(res);
+        }
         timer.Stop();
         logger.LogInformation("Saved audio archives for PostId={PostId} in {Elapsed}", vkPost.Id, timer.Elapsed);
 
         timer.Restart();
-        var audioArchiveFiles = audioArchiveFilesTasks
-            .Where(x => x.Result.Length != 0)
-            .Select(x => x.Result);
         foreach (var archiveFiles in audioArchiveFiles)
         {
             if (result.AudioFiles.Count == 0 || CdFileNameRegex().IsMatch(archiveFiles[0].FileName))
@@ -92,9 +91,11 @@ public partial class TgPostBuildingService(
 
         if (result.AudioFiles.Count == 0 && vkPost.Audios.Count != 0)
         {
-            var audioFileTasks = vkPost.Audios.Select(SaveAudioAsync).ToArray();
-            await Task.WhenAll(audioFileTasks);
-            result.AudioFiles = audioFileTasks.SelectMany(x => x.Result).ToList();
+            result.AudioFiles = [];
+            foreach (var (audio, i) in vkPost.Audios.Select((audio, i) => (audio, i)))
+            {
+                result.AudioFiles.AddRange(await SaveAudioAsync(audio, i));
+            }
         }
         timer.Stop();
         logger.LogInformation("Saved audios for PostId={PostId} in {Elapsed}", vkPost.Id, timer.Elapsed);
