@@ -1,15 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <TargetFramework>net9.0</TargetFramework>
+        <TargetFramework>net10.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
+        <LangVersion>14</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>
       <PackageReference Include="Majorro.Common" Version="1.0.1" />
-      <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="9.0.1" />
-      <PackageReference Include="RocksDB" Version="9.7.3.54622" />
+      <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.1" />
+      <PackageReference Include="RocksDB" Version="10.4.2.63147" />
     </ItemGroup>
 
 </Project>
