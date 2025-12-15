@@ -42,7 +42,16 @@ internal class PostProcessingWorker(
             if (postsDb.GetByVkId(post.Id) is not null)
                 continue;
 
-            var tgPost = await postBuilder.BuildAsync(post); // TODO: continuewith to reduce blocking?
+            TgPost tgPost;
+            try
+            {
+                tgPost = await postBuilder.BuildAsync(post);
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e, "Unable to build post: {PostId}, skipping...", post.Id);
+                continue;
+            }
             await postingQueueWriter.WriteAsync((post.Id, tgPost), ctk);
         }
     }

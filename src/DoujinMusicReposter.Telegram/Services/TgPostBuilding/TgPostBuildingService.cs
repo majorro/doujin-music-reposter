@@ -268,12 +268,25 @@ public partial class TgPostBuildingService(
         {
             var request = new HttpRequestMessage(HttpMethod.Get, uri);
             var response = await httpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead); // TODO: ignore errors?
+            var size = response.Content.Headers.ContentLength;
             if (response.StatusCode == HttpStatusCode.NotFound ||
                 response.StatusCode == HttpStatusCode.GatewayTimeout ||
-                response.Content.Headers.ContentLength < PossiblyBrokenArchiveSizeThreshold)
+                size < PossiblyBrokenArchiveSizeThreshold)
                 return null;
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadAsStreamAsync();
+
+            var progress = 0L;
+            return new ProgressStream.ProgressStream(
+                await response.Content.ReadAsStreamAsync(),
+                new Progress<int>(bytesRead =>
+                {
+                    progress += bytesRead;
+                    if (progress % (1024 * 1024 * 100) == 0 || progress == size)
+                    {
+                        logger.LogInformation("Downloaded {Progress}/{Total} MB from {Uri}", progress / (1024 * 1024), size / (1024 * 1024), uri);
+                    }
+                })
+            );
         }
     }
 

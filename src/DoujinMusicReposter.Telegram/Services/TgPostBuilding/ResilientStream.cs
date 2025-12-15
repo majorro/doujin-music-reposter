@@ -16,7 +16,7 @@ public class ResilientStream : Stream
         _retryPolicy = Policy
             .Handle<IOException>()
             .WaitAndRetryAsync(
-                retryCount: int.MaxValue,
+                retryCount: 5,
                 sleepDurationProvider: retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)),
                 onRetryAsync: async (exception, delay, retryCount, _) =>
                 {
