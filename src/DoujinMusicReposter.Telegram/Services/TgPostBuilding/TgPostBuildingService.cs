@@ -281,7 +281,7 @@ public partial class TgPostBuildingService(
                 new Progress<int>(bytesRead =>
                 {
                     progress += bytesRead;
-                    if (progress % (1024 * 1024 * 100) == 0 || progress == size)
+                    if (progress % (1024 * 1024 * 100) == 0 || bytesRead == 0)
                     {
                         logger.LogInformation("Downloaded {Progress}/{Total} MB from {Uri}", progress / (1024 * 1024), size / (1024 * 1024), uri);
                     }
