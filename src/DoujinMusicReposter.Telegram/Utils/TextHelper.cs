@@ -33,7 +33,7 @@ public static partial class TextHelper
 
     public static string[] GetPreparedText(VkPostDto vkPost, int vkGroupId)
     {
-        var text = $"{vkPost.Text}\n\n{GetVkPostLink(vkPost, vkGroupId)}";
+        var text = $"{ParseVkMarkdownLinks(vkPost.Text)}\n\n{GetVkPostLink(vkPost, vkGroupId)}";
         return GetTgTextParts(text, vkPost.Photo is not null);
     }
 
