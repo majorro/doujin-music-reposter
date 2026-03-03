@@ -19,6 +19,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Create dummy .env
+        run: |          
+          cat > .env << EOF
+          TELEGRAM_API_TEMP_DIR=/
+          TELEGRAM_API_DATA_DIR_MAJORRO=/
+          TELEGRAM_API_DATA_DIR_PANYA=/
+          EOF
+
       - name: Build images
         run: docker compose --profile app build
 

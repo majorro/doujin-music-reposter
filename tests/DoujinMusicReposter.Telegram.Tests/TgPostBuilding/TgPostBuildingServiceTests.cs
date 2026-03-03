@@ -159,7 +159,7 @@ public class TgPostBuildingServiceTests : IDisposable
         Directory.CreateDirectory(extractedPath);
         await using var archiveStream = new FileStream(archivePath, FileMode.Open, FileAccess.Read);
         await using var reader = await ReaderFactory.OpenAsyncReader(archiveStream);
-        await reader.WriteAllToDirectoryAsync(extractedPath);
+        await reader.WriteAllToDirectoryAsync(extractedPath); // TODO: add options back after sharpcompress release if needed
         return extractedPath;
     }
 
