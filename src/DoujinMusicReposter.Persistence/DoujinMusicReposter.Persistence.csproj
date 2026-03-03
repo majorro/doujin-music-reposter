@@ -9,8 +9,8 @@
 
     <ItemGroup>
       <PackageReference Include="Majorro.Common" Version="1.0.1" />
-      <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.1" />
-      <PackageReference Include="RocksDB" Version="10.4.2.63147" />
+      <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" Version="10.0.3" />
+      <PackageReference Include="RocksDB" Version="10.4.2.64152" />
     </ItemGroup>
 
 </Project>
