@@ -124,15 +124,15 @@ public partial class TgPostBuildingService(
         var readerOptions = new ReaderOptions { LeaveStreamOpen = true };
         try
         {
-            using var reader = ReaderFactory.Open(stream, readerOptions);
-            while (reader.MoveToNextEntry()) // TODO: fix tags in audio and archive
+            await using var reader = await ReaderFactory.OpenAsyncReader(stream, readerOptions);
+            while (await reader.MoveToNextEntryAsync()) // TODO: fix tags in audio and archive
             {
                 var entry = reader.Entry;
                 if (entry.IsDirectory || !IsAudioFile(entry))
                     continue;
 
                 await using var entryStream = _memoryStreamPool.GetStream("archiveEntry", entry.Size);
-                await using var es = reader.OpenEntryStream();
+                await using var es = await reader.OpenEntryStreamAsync();
                 await es.CopyToAsync(entryStream);
 
                 var entryFileName = encodingRepairer.TryFix(Path.GetFileName(entry.Key!))!;

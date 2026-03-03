@@ -104,7 +104,7 @@ public class TgPostBuildingServiceTests : IDisposable
         result.AudioFiles[TestData.Mp3AudioIndexInArchive].Artist.Should().Be(TestData.Mp3Audio.Artist);
         result.AudioFiles[TestData.Mp3AudioIndexInArchive].DurationSeconds.Should().Be(TestData.Mp3Audio.DurationSeconds);
 
-        var extractedMp3ArchivePath = ExtractArchive(result.AudioArchives[0].LocalFullName);
+        var extractedMp3ArchivePath = await ExtractArchiveAsync(result.AudioArchives[0].LocalFullName);
         var expectedExtractedPath = Path.Combine(TestData.DataPath, TestData.VkMp3Archive.FileName.Replace(".zip", "Extracted"));
         AssertDirectoriesEquivalence(expectedExtractedPath, extractedMp3ArchivePath);
     }
@@ -133,7 +133,7 @@ public class TgPostBuildingServiceTests : IDisposable
         result.AudioFiles[TestData.Mp3AudioIndexInArchive].DurationSeconds.Should().Be(TestData.Mp3Audio.DurationSeconds);
 
         var mergedMp3ArchivePath = MergeAndSaveArchive(result.AudioArchives);
-        var extractedMp3ArchivePath = ExtractArchive(mergedMp3ArchivePath);
+        var extractedMp3ArchivePath = await ExtractArchiveAsync(mergedMp3ArchivePath);
         var expectedExtractedPath = Path.Combine(TestData.DataPath, TestData.VkMp3Archive.FileName.Replace(".zip", "Extracted"));
         AssertDirectoriesEquivalence(expectedExtractedPath, extractedMp3ArchivePath);
     }
@@ -153,13 +153,13 @@ public class TgPostBuildingServiceTests : IDisposable
         return mergedArchivePath;
     }
 
-    private string ExtractArchive(string archivePath)
+    private async Task<string> ExtractArchiveAsync(string archivePath)
     {
         var extractedPath = Path.Combine(_tempPath, Path.GetFileNameWithoutExtension(archivePath) + "Extracted");
         Directory.CreateDirectory(extractedPath);
-        using var archiveStream = new FileStream(archivePath, FileMode.Open, FileAccess.Read);
-        using var reader = ReaderFactory.Open(archiveStream);
-        reader.WriteAllToDirectory(extractedPath, new ExtractionOptions { ExtractFullPath = true });
+        await using var archiveStream = new FileStream(archivePath, FileMode.Open, FileAccess.Read);
+        await using var reader = await ReaderFactory.OpenAsyncReader(archiveStream);
+        await reader.WriteAllToDirectoryAsync(extractedPath);
         return extractedPath;
     }
 
