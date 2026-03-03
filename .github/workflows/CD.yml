@@ -22,7 +22,10 @@ jobs:
       - name: Create dummy .env
         run: |          
           cat > .env << EOF
-          TELEGRAM_API_TEMP_DIR=/
+          LOCAL_TEMP_DIR=/
+          CONTAINER_TEMP_DIR=/
+          LOCAL_DMR_DATABASE_DIR=/
+          CONTAINER_DMR_DATABASE_DIR=/
           TELEGRAM_API_DATA_DIR_MAJORRO=/
           TELEGRAM_API_DATA_DIR_PANYA=/
           EOF
