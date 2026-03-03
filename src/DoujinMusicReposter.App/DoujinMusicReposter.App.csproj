@@ -22,14 +22,14 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Content Include="..\..\.dockerignore">
-        <Link>.dockerignore</Link>
-      </Content>
-    </ItemGroup>
-
-    <ItemGroup>
       <ProjectReference Include="..\DoujinMusicReposter.Persistence\DoujinMusicReposter.Persistence.csproj" />
       <ProjectReference Include="..\DoujinMusicReposter.Telegram\DoujinMusicReposter.Telegram.csproj" />
       <ProjectReference Include="..\DoujinMusicReposter.Vk\DoujinMusicReposter.Vk.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="..\..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
     </ItemGroup>
 </Project>

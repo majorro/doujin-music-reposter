@@ -1,0 +1,29 @@
+﻿services:
+  telegram-bot-api-panya:
+    ports:
+      - "8081:8081"
+      - "8082:8082"
+    volumes:
+      - telegram-bot-api-panya-data:/var/lib/telegram-bot-api
+    environment:
+      - TELEGRAM_LOG_FILE=/tmp/telegram-bot-api/logs/panya.log
+      - TELEGRAM_STAT=1
+
+  telegram-bot-api-majorro:
+    image: aiogram/telegram-bot-api:latest
+    container_name: telegram-bot-api-majorro
+    restart: always
+    ports:
+      - "8083:8081"
+      - "8084:8082"
+    volumes:
+      - telegram-bot-api-majorro-data:/var/lib/telegram-bot-api
+    environment:
+      - TELEGRAM_LOG_FILE=/tmp/telegram-bot-api/logs/majorro.log
+      - TELEGRAM_STAT=1
+
+  doujin-music-reposter:
+    profiles: ["app"]
+    build:
+      context: src/
+      dockerfile: DoujinMusicReposter.App/Dockerfile

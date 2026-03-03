@@ -1,0 +1,54 @@
+﻿services:
+  telegram-bot-api-majorro:
+    image: aiogram/telegram-bot-api:latest
+    container_name: telegram-bot-api-majorro
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ${TELEGRAM_API_DATA_DIR_MAJORRO}:/var/lib/telegram-bot-api
+      - ${TELEGRAM_API_TEMP_DIR}:/tmp/telegram-bot-api
+    environment:
+      - TELEGRAM_API_ID=${TELEGRAM_API_ID_MAJORRO}
+      - TELEGRAM_API_HASH=${TELEGRAM_API_HASH_MAJORRO}
+      - TELEGRAM_LOCAL=1
+      - TELEGRAM_VERBOSITY=2
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  telegram-bot-api-panya:
+    image: aiogram/telegram-bot-api:latest
+    container_name: telegram-bot-api-panya
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ${TELEGRAM_API_DATA_DIR_PANYA}:/var/lib/telegram-bot-api
+      - ${TELEGRAM_API_TEMP_DIR}:/tmp/telegram-bot-api
+    environment:
+      - TELEGRAM_API_ID=${TELEGRAM_API_ID_PANYA}
+      - TELEGRAM_API_HASH=${TELEGRAM_API_HASH_PANYA}
+      - TELEGRAM_LOCAL=1
+      - TELEGRAM_VERBOSITY=2
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8081/ping" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  doujin-music-reposter:
+    image: ghcr.io/majorro/doujin-music-reposter:latest
+    container_name: doujin-music-reposter
+    restart: unless-stopped
+    env_file:
+      - .env
+    depends_on:
+      telegram-bot-api-majorro:
+        condition: service_healthy
+      telegram-bot-api-panya:
+        condition: service_healthy
