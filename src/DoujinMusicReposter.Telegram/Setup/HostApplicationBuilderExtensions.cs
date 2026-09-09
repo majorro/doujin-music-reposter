@@ -69,9 +69,17 @@ public static class HostApplicationBuilderExtensions
                     .OrResult(resp =>
                         resp.StatusCode == HttpStatusCode.BadRequest && // lmao
                         resp.Content.ReadAsStringAsync().Result.Contains("too many requests", StringComparison.CurrentCultureIgnoreCase))
-                    .WaitAndRetryForeverAsync( // forever?
+                    .WaitAndRetryForeverAsync(
                         retryAttempt => TimeSpan.FromSeconds(8 * retryAttempt),
-                        (result, i, _) => logger.LogWarning("Request {Request} failed with response: {Code}: {Error}, retry #{I}", result.Result?.RequestMessage, (int?)result.Result?.StatusCode, result.Result?.ReasonPhrase, i))); // TODO: rewrite
+                        (result, retry, _) => logger.LogWarning("Request failed: {@Result}, retry #{Retry}", result, retry)))
+                .AddPolicyHandler(_ => Policy
+                    .HandleResult<HttpResponseMessage>(resp => !resp.IsSuccessStatusCode)
+                    .WaitAndRetryAsync(
+                        3,
+                        retryAttempt => TimeSpan.FromSeconds(2 * retryAttempt),
+                        (result, retry, _) => logger.LogWarning("Request failed: {@Result}, retry #{Retry}", result, retry)
+                    )
+                );
         }
 
         builder.Services.AddSingleton<TelegramBotClientPoolService>();
