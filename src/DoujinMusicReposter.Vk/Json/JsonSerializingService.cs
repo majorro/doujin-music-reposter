@@ -35,6 +35,19 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
         return new VkResponse<GetPostsResponse>(new GetPostsResponse(totalCount, posts));
     }
 
+    public VkResponse<GetPostByIdResponse> ParseGetPostByIdResponse(Stream stream)
+    {
+        using var doc = JsonDocument.Parse(stream);
+        var root = doc.RootElement;
+
+        var error = TryGetError<GetPostByIdResponse>(root);
+        if (error is not null) return error;
+
+        var posts = root.GetProperty("response").GetProperty("items").EnumerateArray();
+        var post = posts.MoveNext() ? DeserializePost(posts.Current) : null;
+        return new VkResponse<GetPostByIdResponse>(new GetPostByIdResponse(post));
+    }
+
     // TODO: add audiofiles
     public VkResponse<GetCommentsResponse> ParseGetCommentsResponse(Stream stream)
     {
@@ -180,7 +193,6 @@ public class JsonSerializingService(ILogger<JsonSerializingService> logger) : IJ
             else if (prop.NameEquals("text"))
             {
                 result.Text = prop.Value.GetString()!;
-                break;
             }
         }
 

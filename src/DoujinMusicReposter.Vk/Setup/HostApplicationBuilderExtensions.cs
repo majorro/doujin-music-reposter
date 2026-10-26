@@ -1,6 +1,7 @@
 ﻿using System.Net.Http.Headers;
 using DoujinMusicReposter.Vk.Http;
 using DoujinMusicReposter.Vk.Json;
+using DoujinMusicReposter.Vk.Services;
 using DoujinMusicReposter.Vk.Setup.Configuration;
 using Majorro.Common.Setup.Extensions;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +33,7 @@ public static class HostApplicationBuilderExtensions
                     retryAttempt => TimeSpan.FromSeconds(Math.Min(60, Math.Pow(2, retryAttempt))),
                     (result, i, _) => logger.LogWarning("Request {Request} failed with response: {Code}: {Error}, retry #{I}", result.Result?.RequestMessage, (int?)result.Result?.StatusCode, result.Result?.ReasonPhrase, i)));
         builder.Services.AddSingleton<IJsonSerializingService, JsonSerializingService>();
+        builder.Services.AddSingleton<VkPostPreparingService>();
 
         builder.Services.AddHostedService<UpdateTrackingWorker>();
 

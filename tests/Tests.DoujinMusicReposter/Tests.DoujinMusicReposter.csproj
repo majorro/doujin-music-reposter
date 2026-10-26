@@ -34,10 +34,7 @@
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\DoujinMusicReposter.Telegram\DoujinMusicReposter.Telegram.csproj" />
-    </ItemGroup>
-
-    <ItemGroup>
-      <Folder Include="TgPostBuilding\TestData\" />
+      <ProjectReference Include="..\..\src\DoujinMusicReposter.App\DoujinMusicReposter.App.csproj" />
     </ItemGroup>
 
 </Project>

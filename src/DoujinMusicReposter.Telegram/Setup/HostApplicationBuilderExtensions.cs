@@ -1,5 +1,7 @@
-﻿using System.Net;
+﻿using DoujinMusicReposter.Telegram.Workers;
+using System.Net;
 using DoujinMusicReposter.Telegram.Services;
+using DoujinMusicReposter.Telegram.Services.AdminBot;
 using DoujinMusicReposter.Telegram.Services.Interfaces;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding;
 using DoujinMusicReposter.Telegram.Services.TgPostBuilding.AudioTags;
@@ -39,6 +41,27 @@ public static class HostApplicationBuilderExtensions
             //         (result, i, _) => logger.LogWarning("Request {Request} failed with response: {Code}: {Error}, retry #{I}", result.Result?.RequestMessage, (int?)result.Result?.StatusCode, result.Result?.ReasonPhrase, i)));
 
         builder.Services.AddSingleton<IPostsManagingService, PostsManagingService>();
+        builder.AddAdminBot();
+
+        return builder;
+    }
+
+    private static IHostApplicationBuilder AddAdminBot(this IHostApplicationBuilder builder)
+    {
+        if (!string.IsNullOrWhiteSpace(builder.Configuration[$"{TgConfig.SectionName}:AdminBotToken"]))
+        {
+            builder.Services.AddOptions<TgConfig>()
+                .Validate(config => long.TryParse(config.ChatAdminId, out var adminId) && adminId > 0,
+                    "The admin bot requires TgConfig.ChatAdminId to be a positive numeric Telegram user ID.")
+                .ValidateOnStart();
+            builder.Services.AddHttpClient("AdminBot", client => client.Timeout = TimeSpan.FromSeconds(60));
+            builder.Services.AddKeyedSingleton<ITelegramBotClient>("AdminBot", (sp, _) =>
+                new TelegramBotClient(sp.GetRequiredService<IOptions<TgConfig>>().Value.AdminBotToken!,
+                    sp.GetRequiredService<IHttpClientFactory>().CreateClient("AdminBot")));
+            builder.Services.AddSingleton<AdminCommandHandlingService>();
+            builder.Services.AddSingleton<AdminUpdateHandler>();
+            builder.Services.AddHostedService<AdminBotWorker>();
+        }
 
         return builder;
     }

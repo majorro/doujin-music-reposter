@@ -4,7 +4,7 @@ using DoujinMusicReposter.Persistence.Repositories.Interfaces;
 using DoujinMusicReposter.Telegram.Services.Interfaces;
 using DoujinMusicReposter.Vk.Dtos;
 using DoujinMusicReposter.Vk.Http;
-using DoujinMusicReposter.Vk.Utils;
+using DoujinMusicReposter.Vk.Services;
 
 namespace DoujinMusicReposter.App.Services;
 
@@ -12,6 +12,7 @@ internal class FeedIntegrityVerifyingService(
     ILogger<FeedIntegrityVerifyingService> logger,
     ChannelWriter<VkPostDto> channelWriter,
     IVkApiClient vkClient,
+    VkPostPreparingService postPreparer,
     IPostsManagingService postsManager,
     IPostsRepository postsDb) : IFeedIntegrityVerifyingService
 {
@@ -34,10 +35,11 @@ internal class FeedIntegrityVerifyingService(
             .ToArray();
         logger.LogInformation("Found {Count} unposted posts", unpostedPosts.Length);
 
-        var preparedPosts = await PreparePostsAsync(unpostedPosts);
-        logger.LogInformation("Prepared {Count} posts", preparedPosts.Length);
+        foreach (var post in unpostedPosts)
+            await postPreparer.PrepareAsync(post, ctk);
+        logger.LogInformation("Prepared {Count} posts", unpostedPosts.Length);
 
-        await PublishPostsAsync(preparedPosts, ctk);
+        await PublishPostsAsync(unpostedPosts, ctk);
 
         if (!onlyRecent)
         {
@@ -45,31 +47,6 @@ internal class FeedIntegrityVerifyingService(
             logger.LogInformation("Found {Count} posts to delete", idsToDelete.Length);
             await DeletePostsAsync(idsToDelete);
         }
-    }
-
-    // TODO: extract into a service and reuse in UpdateTrackingWorker
-    private async Task<VkPostDto[]> PreparePostsAsync(VkPostDto[] posts)
-    {
-        foreach (var post in posts)
-        {
-            var vkComments = await vkClient.GetCommentsAsync(post.Id, count: 5);
-            var authorComments = vkComments.Data!.Comments.Where(x => x.IsFromAuthor).ToArray();
-
-            var vkCommentsAudioArchives = authorComments.SelectMany(x => x.AudioArchives);
-            post.VkAudioArchives.AddRange(vkCommentsAudioArchives);
-
-            var postPixelDrainAudioArchives = LinkExtractor
-                .GetPixeldrainLinks(post.Text)
-                .Select(x => new PixelDrainAudioArchiveDto(new Uri(x)));
-            post.PixelDrainAudioArchives.AddRange(postPixelDrainAudioArchives);
-
-            var commentsPixelDrainAudioArchives = authorComments
-                .SelectMany(x => LinkExtractor.GetPixeldrainLinks(x.Text ?? ""))
-                .Select(x => new PixelDrainAudioArchiveDto(new Uri(x)));
-            post.PixelDrainAudioArchives.AddRange(commentsPixelDrainAudioArchives);
-        }
-
-        return posts;
     }
 
     private async Task PublishPostsAsync(IEnumerable<VkPostDto> posts, CancellationToken ctk)
@@ -107,7 +84,8 @@ internal class FeedIntegrityVerifyingService(
 
         do
         {
-            var response = await vkClient.GetPostsAsync(currentOffset); // TODO: math.min
+            var count = Math.Min(100, (totalPosts ?? 100) - currentOffset);
+            var response = await vkClient.GetPostsAsync(currentOffset, count);
 
             result.AddRange(response.Data!.Posts);
             totalPosts ??= response.Data!.TotalCount;

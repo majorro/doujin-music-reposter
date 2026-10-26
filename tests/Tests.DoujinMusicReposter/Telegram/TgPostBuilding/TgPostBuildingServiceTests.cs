@@ -12,10 +12,9 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Moq;
 using Moq.Contrib.HttpClient;
-using SharpCompress.Common;
 using SharpCompress.Readers;
 
-namespace DoujinMusicReposter.Telegram.Tests.TgPostBuilding;
+namespace Tests.DoujinMusicReposter.Telegram.TgPostBuilding;
 
 public class TgPostBuildingServiceTests : IDisposable
 {
@@ -112,30 +111,38 @@ public class TgPostBuildingServiceTests : IDisposable
     [Fact]
     public async Task BuildAsync_GivenPostWithMp3ArchiveExceedingMaxAttachmentSize_Check()
     {
-        var fieldInfo = typeof(TgPostBuildingService).GetField("MaxAttachmentSize", BindingFlags.NonPublic | BindingFlags.Static);
-        fieldInfo!.SetValue(_service, LimitedMaxAttachmentSize);
-
-        var post = new VkPostDto
+        var fieldInfo = typeof(TgPostBuildingService).GetField("MaxAttachmentSize", BindingFlags.NonPublic | BindingFlags.Static)!;
+        var originalMaxAttachmentSize = fieldInfo.GetValue(null);
+        try
         {
-            Id = 228,
-            Text = "Text",
-            VkAudioArchives = [TestData.VkMp3Archive],
-        };
+            fieldInfo.SetValue(null, LimitedMaxAttachmentSize);
 
-        using var result = await _service.BuildAsync(post);
+            var post = new VkPostDto
+            {
+                Id = 228,
+                Text = "Text",
+                VkAudioArchives = [TestData.VkMp3Archive],
+            };
 
-        result.TextParts[0].Should().StartWith("Text");
-        result.Photo.Should().BeNull();
-        result.AudioArchives.Should().HaveCount(2);
-        result.AudioFiles.Should().HaveCount(TestData.AudioInArchiveCount);
-        result.AudioFiles[TestData.Mp3AudioIndexInArchive].Title.Should().Be(TestData.Mp3Audio.Title);
-        result.AudioFiles[TestData.Mp3AudioIndexInArchive].Artist.Should().Be(TestData.Mp3Audio.Artist);
-        result.AudioFiles[TestData.Mp3AudioIndexInArchive].DurationSeconds.Should().Be(TestData.Mp3Audio.DurationSeconds);
+            using var result = await _service.BuildAsync(post);
 
-        var mergedMp3ArchivePath = MergeAndSaveArchive(result.AudioArchives);
-        var extractedMp3ArchivePath = await ExtractArchiveAsync(mergedMp3ArchivePath);
-        var expectedExtractedPath = Path.Combine(TestData.DataPath, TestData.VkMp3Archive.FileName.Replace(".zip", "Extracted"));
-        AssertDirectoriesEquivalence(expectedExtractedPath, extractedMp3ArchivePath);
+            result.TextParts[0].Should().StartWith("Text");
+            result.Photo.Should().BeNull();
+            result.AudioArchives.Should().HaveCount(2);
+            result.AudioFiles.Should().HaveCount(TestData.AudioInArchiveCount);
+            result.AudioFiles[TestData.Mp3AudioIndexInArchive].Title.Should().Be(TestData.Mp3Audio.Title);
+            result.AudioFiles[TestData.Mp3AudioIndexInArchive].Artist.Should().Be(TestData.Mp3Audio.Artist);
+            result.AudioFiles[TestData.Mp3AudioIndexInArchive].DurationSeconds.Should().Be(TestData.Mp3Audio.DurationSeconds);
+
+            var mergedMp3ArchivePath = MergeAndSaveArchive(result.AudioArchives);
+            var extractedMp3ArchivePath = await ExtractArchiveAsync(mergedMp3ArchivePath);
+            var expectedExtractedPath = Path.Combine(TestData.DataPath, TestData.VkMp3Archive.FileName.Replace(".zip", "Extracted"));
+            AssertDirectoriesEquivalence(expectedExtractedPath, extractedMp3ArchivePath);
+        }
+        finally
+        {
+            fieldInfo.SetValue(null, originalMaxAttachmentSize);
+        }
     }
 
     private string MergeAndSaveArchive(params IEnumerable<AudioArchiveFile> archiveFileParts)

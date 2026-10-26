@@ -3,6 +3,7 @@ using System.Threading.Channels;
 using DoujinMusicReposter.App.Services;
 using DoujinMusicReposter.App.Services.Interfaces;
 using DoujinMusicReposter.App.Workers;
+using DoujinMusicReposter.Telegram.Services.Interfaces;
 using DoujinMusicReposter.Vk.Dtos;
 
 namespace DoujinMusicReposter.App.Setup;
@@ -41,6 +42,7 @@ public static class HostApplicationBuilderExtensions
     public static IHostApplicationBuilder AddApp(this IHostApplicationBuilder builder)
     {
         builder.Services.AddSingleton<IFeedIntegrityVerifyingService, FeedIntegrityVerifyingService>();
+        builder.Services.AddSingleton<IRepostingService, RepostingService>();
 
         builder.Services.AddHostedService<PostProcessingWorker>();
         builder.Services.AddHostedService<FeedIntegrityVerifyingWorker>();

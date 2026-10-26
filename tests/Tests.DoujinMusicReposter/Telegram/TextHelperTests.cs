@@ -1,7 +1,7 @@
 ﻿using DoujinMusicReposter.Telegram.Utils;
 using FluentAssertions;
 
-namespace DoujinMusicReposter.Telegram.Tests;
+namespace Tests.DoujinMusicReposter.Telegram;
 
 public class TextHelperTests
 {

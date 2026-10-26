@@ -47,7 +47,24 @@ public class VkApiClient(
         });
     }
 
-    public async Task<VkResponse<GetCommentsResponse>> GetCommentsAsync(int postId, int offset = 0, int count = 100, int previewLength = 0)
+    public async Task<VkResponse<GetPostByIdResponse>> GetPostByIdAsync(int postId, CancellationToken ctk = default)
+    {
+        const string method = "wall.getById";
+        var queryParams = new KeyValuePair<string, string>[]
+        {
+            new("posts", $"{-_groupId}_{postId}"),
+        };
+
+        var resiliencePipeline = ResiliencePipelineFactory.Get<GetPostByIdResponse>(logger);
+        return await resiliencePipeline.ExecuteAsync(async ctk =>
+        {
+            RandomizeAuthToken();
+            await using var stream = await httpClient.GetStreamAsync(GetQuery(method, queryParams), ctk);
+            return serializer.ParseGetPostByIdResponse(stream);
+        });
+    }
+
+    public async Task<VkResponse<GetCommentsResponse>> GetCommentsAsync(int postId, int offset = 0, int count = 100, int previewLength = 0, CancellationToken ctk = default)
     {
         const string method = "wall.getComments";
         var queryParams = new KeyValuePair<string, string>[]
