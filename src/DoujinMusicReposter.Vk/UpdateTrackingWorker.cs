@@ -26,7 +26,7 @@ public class UpdateTrackingWorker(
         .AddRetry(new RetryStrategyOptions<int>
         {
             Name = "NewPostCommentPoll",
-            MaxRetryAttempts = 4,
+            MaxRetryAttempts = 20,
             BackoffType = DelayBackoffType.Constant,
             Delay = TimeSpan.FromSeconds(15),
             ShouldHandle = new PredicateBuilder<int>().HandleResult(x => x == 0)
