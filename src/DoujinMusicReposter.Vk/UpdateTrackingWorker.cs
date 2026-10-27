@@ -62,6 +62,7 @@ public class UpdateTrackingWorker(
                         logger.LogInformation("Added {Count} audio archives to PostId={PostId}", count, post.Id);
                     }
 
+                    await Task.Delay(TimeSpan.FromMinutes(1), ctk); // let vk consolidate its data idk
                     await channelWriter.WriteAsync(post, ctk);
                     logger.LogInformation("Sent PostId={PostId} to posting queue", post.Id);
                 }
