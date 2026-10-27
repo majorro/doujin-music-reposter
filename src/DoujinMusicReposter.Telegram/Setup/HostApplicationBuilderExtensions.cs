@@ -51,8 +51,8 @@ public static class HostApplicationBuilderExtensions
         if (!string.IsNullOrWhiteSpace(builder.Configuration[$"{TgConfig.SectionName}:AdminBotToken"]))
         {
             builder.Services.AddOptions<TgConfig>()
-                .Validate(config => long.TryParse(config.ChatAdminId, out var adminId) && adminId > 0,
-                    "The admin bot requires TgConfig.ChatAdminId to be a positive numeric Telegram user ID.")
+                .Validate(config => config.AdminBotWhitelist.Length > 0 && config.AdminBotWhitelist.All(adminId => adminId > 0),
+                    "The admin bot requires TgConfig.AdminBotWhitelist to contain positive numeric Telegram user IDs.")
                 .ValidateOnStart();
             builder.Services.AddHttpClient("AdminBot", client => client.Timeout = TimeSpan.FromSeconds(60));
             builder.Services.AddKeyedSingleton<ITelegramBotClient>("AdminBot", (sp, _) =>

@@ -9,6 +9,7 @@ public record TgConfig : IConfig
     public required string ChatId { get; init; }
     public required string ChatAdminId { get; init; }
     public string? AdminBotToken { get; init; }
+    public long[] AdminBotWhitelist { get; init; } = [];
     public required string LocalFilesDir { get; init; } // mounted to BotApiServerFilesDir in tg bot api server container
     public required string BotApiServerFilesDir { get; init; }
     public required BotConfig BotConfig { get; init; }

@@ -10,11 +10,11 @@ namespace DoujinMusicReposter.Telegram.Services.AdminBot;
 internal class AdminCommandHandlingService(IOptions<TgConfig> tgConfig, IRepostingService repostingService)
 {
     private const string Usage = "Usage: /repost <VK post ID> [more IDs separated by spaces]";
-    private readonly long _adminId = long.Parse(tgConfig.Value.ChatAdminId, CultureInfo.InvariantCulture);
+    private readonly long[] _adminIds = tgConfig.Value.AdminBotWhitelist;
 
     public async Task<string?> HandleAsync(Message message, string botUsername, CancellationToken ctk = default)
     {
-        if (message.Chat.Type != ChatType.Private || message.From?.Id != _adminId || message.Chat.Id != _adminId)
+        if (message.Chat.Type != ChatType.Private || message.From is null || !_adminIds.Contains(message.From.Id) || message.Chat.Id != message.From.Id)
             return null;
         if (message.Text is null)
             return Usage;
