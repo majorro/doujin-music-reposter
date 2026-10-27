@@ -1,0 +1,15 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".env" />
+    <File Path=".gitignore" />
+    <File Path="docker-compose.base.yml" />
+    <File Path="docker-compose.override.yml" />
+    <File Path="docker-compose.yml" />
+    <File Path="example.env" />
+  </Folder>
+  <Project Path="src/DoujinMusicReposter.App/DoujinMusicReposter.App.csproj" />
+  <Project Path="src/DoujinMusicReposter.Persistence/DoujinMusicReposter.Persistence.csproj" />
+  <Project Path="src/DoujinMusicReposter.Telegram/DoujinMusicReposter.Telegram.csproj" />
+  <Project Path="src/DoujinMusicReposter.Vk/DoujinMusicReposter.Vk.csproj" />
+  <Project Path="tests/Tests.DoujinMusicReposter/Tests.DoujinMusicReposter.csproj" />
+</Solution>
