@@ -1,4 +1,4 @@
-﻿using System.Threading.Channels;
+using System.Threading.Channels;
 using DoujinMusicReposter.Persistence.Repositories.Interfaces;
 using DoujinMusicReposter.Vk.Dtos;
 using DoujinMusicReposter.Vk.Http;
@@ -15,7 +15,6 @@ namespace DoujinMusicReposter.Vk;
 public class UpdateTrackingWorker(
     ILogger<UpdateTrackingWorker> logger,
     ChannelWriter<VkPostDto> channelWriter,
-    SemaphoreSlim semaphore,
     IVkApiClient vkClient,
     VkPostPreparingService postPreparer,
     IPostsRepository postsDb) : BackgroundService
@@ -26,7 +25,7 @@ public class UpdateTrackingWorker(
         .AddRetry(new RetryStrategyOptions<int>
         {
             Name = "NewPostCommentPoll",
-            MaxRetryAttempts = 20,
+            MaxRetryAttempts = 10,
             BackoffType = DelayBackoffType.Constant,
             Delay = TimeSpan.FromSeconds(15),
             ShouldHandle = new PredicateBuilder<int>().HandleResult(x => x == 0)
@@ -50,26 +49,18 @@ public class UpdateTrackingWorker(
 
             logger.LogInformation("Got {Count} new posts", posts.Count);
 
-            await semaphore.WaitAsync(ctk);
-            try
+            foreach (var post in posts)
             {
-                foreach (var post in posts)
+                if (post.VkAudioArchives.Count < 2) // older posts may have more than a single attachment
                 {
-                    if (post.VkAudioArchives.Count < 2) // older posts may have more than a single attachment
-                    {
-                        // TODO: sub for comment event?
-                        var count = await _commentPollingPipeline.ExecuteAsync(async (p, _) => await postPreparer.PrepareAsync(p), post, ctk);
-                        logger.LogInformation("Added {Count} audio archives to PostId={PostId}", count, post.Id);
-                    }
-
-                    await Task.Delay(TimeSpan.FromMinutes(1), ctk); // let vk consolidate its data idk
-                    await channelWriter.WriteAsync(post, ctk);
-                    logger.LogInformation("Sent PostId={PostId} to posting queue", post.Id);
+                    // TODO: sub for comment event?
+                    var count = await _commentPollingPipeline.ExecuteAsync(async (p, _) => await postPreparer.PrepareAsync(p), post, ctk);
+                    logger.LogInformation("Added {Count} audio archives to PostId={PostId}", count, post.Id);
                 }
-            }
-            finally
-            {
-                semaphore.Release();
+
+                await Task.Delay(TimeSpan.FromMinutes(1), ctk); // let vk consolidate its data idk
+                await channelWriter.WriteAsync(post, ctk);
+                logger.LogInformation("Sent PostId={PostId} to posting queue", post.Id);
             }
         }
     }

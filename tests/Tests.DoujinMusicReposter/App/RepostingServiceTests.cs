@@ -1,4 +1,4 @@
-﻿using System.Threading.Channels;
+using System.Threading.Channels;
 using DoujinMusicReposter.App.Services;
 using DoujinMusicReposter.Persistence.Repositories.Interfaces;
 using DoujinMusicReposter.Telegram.Services.Interfaces;
@@ -12,13 +12,12 @@ using Moq;
 
 namespace Tests.DoujinMusicReposter.App;
 
-public class RepostingServiceTests : IDisposable
+public class RepostingServiceTests
 {
     private readonly Mock<IVkApiClient> _vkClient = new();
     private readonly Mock<IPostsRepository> _postsDb = new(MockBehavior.Strict);
     private readonly Mock<IPostsManagingService> _postsManager = new(MockBehavior.Strict);
     private readonly Channel<VkPostDto> _queue = Channel.CreateUnbounded<VkPostDto>();
-    private readonly SemaphoreSlim _semaphore = new(1, 1);
     private readonly RepostingService _service;
 
     public RepostingServiceTests()
@@ -33,8 +32,7 @@ public class RepostingServiceTests : IDisposable
             new VkPostPreparingService(_vkClient.Object),
             _postsManager.Object,
             _postsDb.Object,
-            _queue.Writer,
-            _semaphore);
+            _queue.Writer);
     }
 
     [Fact]
@@ -120,6 +118,4 @@ public class RepostingServiceTests : IDisposable
             .ReturnsAsync(new VkResponse<GetPostByIdResponse>(new GetPostByIdResponse(post)));
         return post;
     }
-
-    public void Dispose() => _semaphore.Dispose();
 }

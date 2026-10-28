@@ -15,8 +15,7 @@ internal class RepostingService(
     VkPostPreparingService postPreparer,
     IPostsManagingService postsManager,
     IPostsRepository postsDb,
-    ChannelWriter<VkPostDto> channelWriter,
-    SemaphoreSlim semaphore) : IRepostingService
+    ChannelWriter<VkPostDto> channelWriter) : IRepostingService
 {
     public async Task<IReadOnlyList<RepostResult>> RepostAsync(int[] postIds, CancellationToken ctk = default)
     {
@@ -56,29 +55,20 @@ internal class RepostingService(
 
         await postPreparer.PrepareAsync(post, ctk);
 
-        await semaphore.WaitAsync(ctk);
-        try
+        var messageIds = postsDb.GetByVkId(postId);
+        if (messageIds is null)
         {
-            var messageIds = postsDb.GetByVkId(postId);
-            if (messageIds is null)
-            {
-                logger.LogWarning("No Telegram mapping for PostId={PostId}; queueing anyway", postId);
-            }
-            else
-            {
-                if (messageIds.Length > 0)
-                    await postsManager.DeleteMessagesAsync(messageIds);
-                postsDb.RemoveByVkId(postId);
-            }
+            logger.LogWarning("No Telegram mapping for PostId={PostId}; queueing anyway", postId);
+        }
+        else
+        {
+            if (messageIds.Length > 0)
+                await postsManager.DeleteMessagesAsync(messageIds);
+            postsDb.RemoveByVkId(postId);
+        }
 
-            // Complete the reset once deletion has started, even if shutdown was requested.
-            await channelWriter.WriteAsync(post);
-            logger.LogInformation("Sent PostId={PostId} to reposting queue", postId);
-            return new RepostResult(postId, "Queued");
-        }
-        finally
-        {
-            semaphore.Release();
-        }
+        await channelWriter.WriteAsync(post);
+        logger.LogInformation("Sent PostId={PostId} to reposting queue", postId);
+        return new RepostResult(postId, "Queued");
     }
 }

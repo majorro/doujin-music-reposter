@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using System.Threading.Channels;
 using DoujinMusicReposter.App.Services;
 using DoujinMusicReposter.App.Services.Interfaces;
@@ -28,13 +28,10 @@ public static class HostApplicationBuilderExtensions
         var postBuildingQueue = Channel.CreateUnbounded<VkPostDto>(new UnboundedChannelOptions
         {
             SingleReader = true,
-            SingleWriter = true
+            SingleWriter = false
         });
         builder.Services.AddSingleton(postBuildingQueue.Writer);
         builder.Services.AddSingleton(postBuildingQueue.Reader);
-
-        var postBuildingSemaphore = new SemaphoreSlim(1, 1);
-        builder.Services.AddSingleton(postBuildingSemaphore);
 
         return builder;
     }
